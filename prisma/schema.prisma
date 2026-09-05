@@ -1,0 +1,586 @@
+// Prisma schema for the journal/publication platform backend.
+//
+// Every model here is a direct, non-redesigned implementation of
+// docs/DATABASE_SCHEMA.md from the frontend repo (Milestone 7 handoff).
+// Field names are snake_case at the column level (@map) per that doc's
+// convention; Prisma's generated client still exposes camelCase in code.
+//
+// pgvector is enabled (see migration) even though nothing here uses it
+// yet — reserved for the future Research Assistant feature (Gemini +
+// pgvector embeddings), per the handoff instructions. Nothing in this
+// schema assumes a particular embeddings table shape yet; that lands in
+// a future migration once docs/AI_RESEARCH_ASSISTANT.md exists.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ActiveArchivedStatus {
+  active
+  archived
+}
+
+enum IssueStatus {
+  published
+  current
+  archived
+}
+
+enum ArticleStatus {
+  draft
+  submitted
+  under_review
+  revision_required
+  resubmitted
+  accepted
+  rejected
+  scheduled
+  published
+  archived
+}
+
+enum EditorRole {
+  editor_in_chief
+  managing_editor
+  associate_editor
+  section_editor
+  board_member
+  guest_editor
+}
+
+enum EditorStatus {
+  active
+  inactive
+}
+
+enum ReviewerStatus {
+  active
+  inactive
+}
+
+enum ReviewRecommendation {
+  accept
+  minor_revision
+  major_revision
+  reject
+}
+
+// Free-form today per DATABASE_SCHEMA.md ("not modeled as a formal enum
+// anywhere... define the real enum when the review-submission workflow is
+// actually built"). Kept as a plain string column (see Review model) —
+// not a Prisma enum — precisely because the doc says not to invent one yet.
+
+enum IndexingStatus {
+  unconfirmed
+  confirmed
+  inactive
+}
+
+enum ContactMessageStatus {
+  new
+  read
+  in_progress
+  resolved
+  archived
+}
+
+enum UserRole {
+  super_admin
+  admin
+  editorial_subadmin
+  publication_subadmin
+  seo_subadmin
+  support_subadmin
+  reviewer
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Publisher
+// ─────────────────────────────────────────────────────────────────────────
+
+model Publisher {
+  id          String               @id @default(uuid())
+  slug        String               @unique
+  name        String
+  description String?
+  logo        String?
+  address     String?
+  country     String?
+  website     String?
+  email       String?
+  phone       String?
+  status      ActiveArchivedStatus
+  seoTitle       String?           @map("seo_title")
+  seoDescription String?           @map("seo_description")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  publications Publication[]
+
+  @@map("publishers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Publication (a "journal")
+// ─────────────────────────────────────────────────────────────────────────
+
+model Publication {
+  id             String               @id @default(uuid())
+  slug           String               @unique
+  publisherId    String               @map("publisher_id")
+  name           String
+  shortName      String               @map("short_name")
+  tagline        String?
+  issnOnline     String?              @map("issn_online")
+  issnPrint      String?              @map("issn_print")
+  founded        String?
+  frequency      String?
+  language       String?
+  country        String?
+  reviewModel    String?              @map("review_model")
+  accessModel    String?              @map("access_model")
+  subjectAreaIds String[]             @map("subject_area_ids")
+  email          String?
+  address        String?
+  website        String?
+  logo           String?
+  cover          String?
+  status         ActiveArchivedStatus
+  seoTitle       String?              @map("seo_title")
+  seoDescription String?              @map("seo_description")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  publisher      Publisher        @relation(fields: [publisherId], references: [id])
+  volumes        Volume[]
+  issues         Issue[]
+  articles       Article[]
+  editors        Editor[]
+  indexingEntries IndexingService[]
+
+  @@index([publisherId])
+  @@map("publications")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Volume
+// ─────────────────────────────────────────────────────────────────────────
+
+model Volume {
+  id            String               @id @default(uuid())
+  publicationId String               @map("publication_id")
+  number        Int
+  year          Int?
+  description   String?
+  status        ActiveArchivedStatus
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  publication Publication @relation(fields: [publicationId], references: [id])
+  issues      Issue[]
+  articles    Article[]
+
+  @@unique([publicationId, number])
+  @@map("volumes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Issue
+// ─────────────────────────────────────────────────────────────────────────
+
+model Issue {
+  id              String      @id @default(uuid())
+  volumeId        String      @map("volume_id")
+  // Denormalized on purpose, mirroring volume.publication_id — every
+  // issue-list query filters by this directly. Kept in sync on write in
+  // the service layer (see modules/issues/issues.service.ts).
+  publicationId   String      @map("publication_id")
+  number          Int
+  label           String
+  period          String?
+  publicationDate DateTime?   @map("publication_date") @db.Date
+  description     String?
+  cover           String?
+  status          IssueStatus
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  volume      Volume      @relation(fields: [volumeId], references: [id])
+  publication Publication @relation(fields: [publicationId], references: [id])
+  articles    Article[]
+
+  // Constraint from DATABASE_SCHEMA.md: at most one Issue per
+  // publication_id may have status = 'current'. Prisma can't express a
+  // partial unique index declaratively, so this is added by hand in the
+  // generated migration SQL (see prisma/migrations/.../migration.sql).
+  @@index([publicationId])
+  @@index([volumeId])
+  @@map("issues")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Article
+// ─────────────────────────────────────────────────────────────────────────
+
+model Article {
+  id                 String        @id @default(uuid())
+  slug               String        @unique
+  title              String
+  abstract           String
+  content            String?
+  publicationId      String        @map("publication_id")
+  volumeId           String?       @map("volume_id")
+  issueId            String?       @map("issue_id")
+  pages              String?
+  doi                String?
+  manuscriptId       String?       @map("manuscript_id")
+  articleType        String        @map("article_type")
+  receivedDate       DateTime?     @map("received_date") @db.Date
+  revisedDate        DateTime?     @map("revised_date") @db.Date
+  acceptedDate       DateTime?     @map("accepted_date") @db.Date
+  publishedDate      DateTime?     @map("published_date") @db.Date
+  pdfUrl             String?       @map("pdf_url")
+  supplementaryFiles String[]      @map("supplementary_files")
+  references         String[]
+  license            String?
+  status             ArticleStatus
+  area               String?
+  seoTitle           String?       @map("seo_title")
+  seoDescription     String?       @map("seo_description")
+  seoCanonicalUrl    String?       @map("seo_canonical_url")
+  // Full-text search: generated tsvector over title/abstract/keywords,
+  // populated by the search migration's trigger + GIN index. Not backed
+  // by a Prisma-managed column type directly (Unsupported), so raw SQL
+  // in the migration owns it; see modules/search for the query side.
+  searchVector       Unsupported("tsvector")? @map("search_vector")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  publication Publication      @relation(fields: [publicationId], references: [id])
+  volume      Volume?          @relation(fields: [volumeId], references: [id])
+  issue       Issue?           @relation(fields: [issueId], references: [id])
+  authors     ArticleAuthor[]
+  reviews     Review[]
+  chunks      ArticleChunk[]
+
+  @@index([publicationId])
+  @@index([status])
+  @@index([volumeId])
+  @@index([issueId])
+  // Declared so `prisma migrate dev` stops treating the hand-written GIN
+  // index (init migration) as drift and generating a DROP INDEX for it —
+  // Gin is a GA index type since Prisma 4.0.0, no preview feature needed.
+  // (Discovered the hard way: a real `prisma migrate dev` run against a
+  // real Aiven instance auto-generated a migration dropping this index,
+  // because it wasn't declared here. Fixed here, and a follow-up
+  // migration recreating it is needed if that drop already applied.)
+  @@index([searchVector], type: Gin)
+  @@map("articles")
+}
+
+// ArticleAuthor join table — many-to-many, ordered (byline order matters).
+
+model ArticleAuthor {
+  articleId String @map("article_id")
+  authorId  String @map("author_id")
+  position  Int
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  author  Author  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, authorId])
+  @@index([authorId])
+  @@map("article_authors")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Author
+// ─────────────────────────────────────────────────────────────────────────
+
+model Author {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  firstName     String   @map("first_name")
+  lastName      String   @map("last_name")
+  fullName      String   @map("full_name")
+  institution   String?
+  department    String?
+  country       String?
+  bio           String?
+  orcid         String?
+  profileImage  String?  @map("profile_image")
+  website       String?
+  email         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  articles ArticleAuthor[]
+
+  @@map("authors")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Editor
+// ─────────────────────────────────────────────────────────────────────────
+
+model Editor {
+  id                 String       @id @default(uuid())
+  slug               String       @unique
+  name               String
+  role               EditorRole
+  publicationId      String       @map("publication_id")
+  institution        String?
+  country            String?
+  bio                String?
+  profileImage       String?      @map("profile_image")
+  orcid              String?
+  researchInterests  String[]     @map("research_interests")
+  displayOrder       Int          @map("display_order")
+  status             EditorStatus
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  publication Publication @relation(fields: [publicationId], references: [id])
+
+  @@index([publicationId])
+  @@map("editors")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Reviewer — PRIVATE. Never exposed on any public endpoint.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Reviewer {
+  id          String         @id @default(uuid())
+  name        String
+  email       String         @unique
+  institution String?
+  country     String?
+  expertise   String[]
+  status      ReviewerStatus
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  reviews Review[]
+  user    User?
+
+  @@map("reviewers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Review — PRIVATE. Never exposed on any public endpoint.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Review {
+  id             String                @id @default(uuid())
+  manuscriptId   String                @map("manuscript_id")
+  reviewerId     String                @map("reviewer_id")
+  recommendation ReviewRecommendation?
+  comments       String?
+  submittedAt    DateTime?             @map("submitted_at")
+  // Free text today per DATABASE_SCHEMA.md — "not modeled as a formal
+  // enum anywhere... define the real enum when the review-submission
+  // workflow is actually built." Only "completed" exists in sample data.
+  status         String
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  manuscript Article  @relation(fields: [manuscriptId], references: [id])
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id])
+
+  @@index([manuscriptId])
+  @@index([reviewerId])
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// IndexingService
+// ─────────────────────────────────────────────────────────────────────────
+
+model IndexingService {
+  id            String         @id @default(uuid())
+  publicationId String         @map("publication_id")
+  name          String
+  description   String?
+  url           String?
+  logo          String?
+  status        IndexingStatus
+  displayOrder  Int            @map("display_order")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  publication Publication @relation(fields: [publicationId], references: [id])
+
+  @@index([publicationId])
+  @@map("indexing_services")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ContactMessage — admin-only, never public
+// ─────────────────────────────────────────────────────────────────────────
+
+model ContactMessage {
+  id        String                @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  category  String?
+  status    ContactMessageStatus  @default(new)
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@map("contact_messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// User
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  reviewerId   String?  @unique @map("reviewer_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  reviewer            Reviewer?             @relation(fields: [reviewerId], references: [id])
+  passwordResetTokens PasswordResetToken[]
+  aiConversations     AiConversation[]
+
+  @@map("users")
+}
+
+// Not in DATABASE_SCHEMA.md as a named model (that doc only says
+// forgot/reset-password "need a real implementation from scratch") but a
+// real, expiring, single-use token needs *some* persistence — this is the
+// minimal shape for that, scoped to Auth only.
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// Note: the session store table ("session") is created and managed
+// automatically by connect-pg-simple, not by Prisma — see
+// src/config/session.ts. It intentionally has no Prisma model.
+
+// ─────────────────────────────────────────────────────────────────────────
+// AI Research Assistant (real implementation — Milestone 7C backend)
+//
+// Shapes here follow the frontend's docs/DATABASE_SCHEMA.md "Forward-
+// looking models" section exactly (added Milestone 7B, made real here).
+// Per that doc's explicit note: citation metadata (authors, volume/issue,
+// publication date, DOI) is NOT denormalized onto ArticleChunk — the
+// research-assistant module joins back to Article (and Article's existing
+// Author/Volume/Issue relations) at query time instead. See
+// src/modules/research-assistant/citations.ts.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum AiMessageRole {
+  user
+  assistant
+}
+
+model ArticleChunk {
+  id          String  @id @default(uuid())
+  articleId   String  @map("article_id")
+  sectionName String? @map("section_name")
+  chunkText   String  @map("chunk_text")
+  // Order within the article, for reconstructing sequence if needed —
+  // docs/DATABASE_SCHEMA.md.
+  chunkIndex  Int     @map("chunk_index")
+
+  // pgvector column. Prisma has no native vector type, hence Unsupported()
+  // — raw SQL owns reads/writes (see research-assistant/ingestion.service.ts
+  // and research-assistant/retrieval.service.ts, following the same
+  // pattern search.service.ts already uses for `search_vector`).
+  //
+  // Dimension is PINNED at 768 here to match GEMINI_EMBEDDING_DIMENSIONS'
+  // default (.env.example) and gemini-embedding-001's recommended
+  // truncated output size. These two MUST stay in sync — changing one
+  // without the other means every insert fails (dimension mismatch) or
+  // silently produces meaningless similarity scores. Changing the
+  // embedding model or dimension requires: (1) a new migration altering
+  // this column's width, (2) updating GEMINI_EMBEDDING_DIMENSIONS, and
+  // (3) re-running `npm run ingest` for every article — old vectors are
+  // not compatible. See README.md's "Changing the embedding model".
+  embedding Unsupported("vector(768)")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  // Only status='published' articles should ever have rows here (see
+  // ingestion.service.ts) — enforced in application code, not by a DB
+  // constraint, since status can change after chunks already exist
+  // (that's exactly the unpublish/archive case that must delete them).
+  @@index([articleId])
+  @@map("article_chunks")
+}
+
+model AiConversation {
+  id    String  @id @default(uuid())
+  // Nullable — anonymous/public use is allowed, matching
+  // docs/DATABASE_SCHEMA.md's note that this is left as a product
+  // decision, not fixed by the schema. The public chat widget has no
+  // login requirement today.
+  userId String? @map("user_id")
+  // Auto-generated from the first message — see
+  // research-assistant.service.ts.
+  title String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User?       @relation(fields: [userId], references: [id])
+  messages AiMessage[]
+
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String        @id @default(uuid())
+  conversationId String        @map("conversation_id")
+  role           AiMessageRole
+  content        String
+  // Which ArticleChunk records (if any) the assistant's response drew
+  // on — only meaningful when role = 'assistant'. Stored as a plain
+  // string array rather than a join table: cited_chunk_ids is
+  // write-once-per-message metadata for display/audit, not something
+  // ever queried from the ArticleChunk side.
+  // @default([]) here matches the migration's DEFAULT ARRAY[]::TEXT[] —
+  // without it, `prisma migrate dev` sees the column's real default as
+  // drift relative to the schema and generates a DROP DEFAULT migration.
+  citedChunkIds String[]      @default([]) @map("cited_chunk_ids")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("ai_messages")
+}

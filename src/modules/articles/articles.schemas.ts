@@ -1,0 +1,57 @@
+import { z } from "zod";
+import { ARTICLE_STATUSES } from "../../lib/editorialWorkflow.js";
+
+const articleStatusEnum = z.enum(ARTICLE_STATUSES);
+
+export const articleCreateSchema = z.object({
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  abstract: z.string().min(1),
+  content: z.string().optional(),
+  publicationId: z.string().min(1),
+  volumeId: z.string().optional(),
+  issueId: z.string().optional(),
+  pages: z.string().optional(),
+  doi: z.string().optional(),
+  manuscriptId: z.string().optional(),
+  articleType: z.string().min(1),
+  receivedDate: z.coerce.date().optional(),
+  revisedDate: z.coerce.date().optional(),
+  acceptedDate: z.coerce.date().optional(),
+  publishedDate: z.coerce.date().optional(),
+  pdfUrl: z.string().url().optional(),
+  supplementaryFiles: z.array(z.string().url()).default([]),
+  references: z.array(z.string()).default([]),
+  license: z.string().optional(),
+  status: articleStatusEnum,
+  area: z.string().optional(),
+  seoTitle: z.string().optional(),
+  seoDescription: z.string().optional(),
+  seoCanonicalUrl: z.string().url().optional(),
+  // Ordered author ids — byline order is the array order (position is
+  // derived from index, not sent explicitly). See DATABASE_SCHEMA.md's
+  // ArticleAuthor join-table note.
+  authorIds: z.array(z.string()).default([]),
+});
+
+export const articleUpdateSchema = articleCreateSchema.partial();
+
+export const articleAdminListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(20),
+  status: articleStatusEnum.optional(),
+  publicationId: z.string().optional(),
+  area: z.string().optional(),
+  q: z.string().optional(),
+});
+
+export const articlePublicListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  publicationId: z.string().optional(),
+  issueId: z.string().optional(),
+  volumeId: z.string().optional(),
+  area: z.string().optional(),
+});
+
+export const statusUpdateSchema = z.object({ status: articleStatusEnum });

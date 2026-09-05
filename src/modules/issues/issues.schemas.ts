@@ -1,0 +1,15 @@
+import { z } from "zod";
+
+export const issueCreateSchema = z.object({
+  volumeId: z.string().min(1),
+  publicationId: z.string().min(1),
+  number: z.coerce.number().int(),
+  label: z.string().min(1),
+  period: z.string().optional(),
+  publicationDate: z.coerce.date().optional(),
+  description: z.string().optional(),
+  cover: z.string().url().optional(),
+  status: z.enum(["published", "current", "archived"]),
+});
+
+export const issueUpdateSchema = issueCreateSchema.partial();

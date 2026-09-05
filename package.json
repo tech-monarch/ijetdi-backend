@@ -1,0 +1,65 @@
+{
+  "name": "journal-platform-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend API for the journal/publication platform (see docs/BACKEND_HANDOFF.md in the frontend repo for the full spec this implements).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "seed": "tsx src/db/seed.ts",
+    "seed:article": "tsx src/db/seed-article.ts",
+    "ingest": "tsx src/db/ingest.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.629.0",
+    "@aws-sdk/s3-request-presigner": "^3.629.0",
+    "@prisma/client": "^5.19.0",
+    "argon2": "^0.40.3",
+    "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.0",
+    "helmet": "^7.1.0",
+    "multer": "^2.3.0",
+    "pg": "^8.12.0",
+    "pino": "^9.3.2",
+    "pino-http": "^10.2.0",
+    "resend": "^4.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.0",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.14.15",
+    "@types/pg": "^8.11.6",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.9.0",
+    "prisma": "^5.19.0",
+    "supertest": "^7.0.0",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.3.0",
+    "vitest": "^2.0.5"
+  },
+  "prisma": {
+    "seed": "tsx src/db/seed.ts"
+  }
+}
