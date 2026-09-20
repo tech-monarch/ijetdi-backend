@@ -23,6 +23,12 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().default(""),
   EMAIL_FROM: z.string().default("IJETDI <noreply@ijetdi.example>"),
+  // Where "new submission" / "review submitted" staff-facing notifications
+  // go. Empty by default (not required — the same "log instead of throw"
+  // dev-mode fallback the Resend provider already uses for
+  // RESEND_API_KEY applies here too, via submissions/reviews services
+  // simply skipping the send when this is unset).
+  EDITOR_NOTIFICATION_EMAIL: z.string().default(""),
 
   FRONTEND_BASE_URL: z.string().default("http://localhost:5173"),
 

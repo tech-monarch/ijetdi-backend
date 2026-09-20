@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalUrl } from "../../lib/zodHelpers.js";
 
 export const issueCreateSchema = z.object({
   volumeId: z.string().min(1),
@@ -8,7 +9,7 @@ export const issueCreateSchema = z.object({
   period: z.string().optional(),
   publicationDate: z.coerce.date().optional(),
   description: z.string().optional(),
-  cover: z.string().url().optional(),
+  cover: optionalUrl(),
   status: z.enum(["published", "current", "archived"]),
 });
 

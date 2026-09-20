@@ -25,8 +25,11 @@ import {
 } from "./modules/reviewers-reviews/reviewers-reviews.routes.js";
 import { indexingRouter, indexingAdminRouter } from "./modules/indexing/indexing.routes.js";
 import { contactRouter, contactAdminRouter } from "./modules/contact/contact.routes.js";
+import { submissionsRouter } from "./modules/submissions/submissions.routes.js";
+import { usersAdminRouter } from "./modules/users/users.routes.js";
 import { searchRouter } from "./modules/search/search.routes.js";
 import { uploadsAdminRouter } from "./modules/uploads/uploads.routes.js";
+import { importAdminRouter } from "./modules/import/import.routes.js";
 import { researchAssistantRouter } from "./modules/research-assistant/research-assistant.routes.js";
 
 // Swappable email abstraction — Resend is wired here, once, per
@@ -96,6 +99,7 @@ export function createApp() {
   app.use("/api", editorsRouter);
   app.use("/api", indexingRouter);
   app.use("/api", contactRouter);
+  app.use("/api", submissionsRouter);
   app.use("/api", searchRouter);
   app.use("/api", researchAssistantRouter);
 
@@ -114,6 +118,8 @@ export function createApp() {
   app.use("/api/admin", indexingAdminRouter);
   app.use("/api/admin", contactAdminRouter);
   app.use("/api/admin", uploadsAdminRouter);
+  app.use("/api/admin", importAdminRouter);
+  app.use("/api/admin", usersAdminRouter);
 
   app.use((req, res) => {
     res.status(404).json({ success: false, error: { code: "ROUTE_NOT_FOUND", message: `No route: ${req.method} ${req.path}` } });

@@ -4,7 +4,14 @@
 // hard-wired into every call site") only means changing which provider
 // implementation is wired up in `getEmailProvider()` below.
 
-export type EmailTemplate = "password-reset" | "contact-received";
+export type EmailTemplate =
+  | "password-reset"
+  | "contact-received"
+  | "submission-received"
+  | "submission-notify-editors"
+  | "review-assigned"
+  | "review-submitted"
+  | "user-account-created";
 
 export interface EmailProvider {
   send(params: { to: string; template: EmailTemplate; data: Record<string, unknown> }): Promise<void>;

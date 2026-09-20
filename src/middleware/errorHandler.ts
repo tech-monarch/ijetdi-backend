@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import multer from "multer";
+import { ZodError } from "zod";
 import { ApiError } from "../lib/envelope.js";
 import { env } from "../config/env.js";
 
@@ -27,6 +29,37 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
 
   if (err instanceof ApiError) {
     res.status(err.status).json({ success: false, error: { code: err.code, message: err.message } });
+    return;
+  }
+
+  // Pre-existing gap, fixed here: multer's own errors (e.g. exceeding
+  // limits.fileSize) previously fell through to the generic 500 branch
+  // below with no dedicated handling — a client-side problem (an
+  // oversized upload) reported back as a server error. Affects both the
+  // existing uploads endpoint and the new document-import endpoint, since
+  // both use multer.
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "That file is too large for this field."
+        : `Upload error: ${err.message}`;
+    res.status(400).json({ success: false, error: { code: err.code, message } });
+    return;
+  }
+
+  // Pre-existing gap, fixed here: a few routes call a Zod schema's
+  // .parse() directly on the query string (contact.routes.ts,
+  // reviewers-reviews.routes.ts, search.routes.ts) rather than going
+  // through validate.ts's validateBody/validateQuery (which use
+  // safeParse and format their own 400s). A raw .parse() throws a
+  // ZodError, which had no dedicated branch here and fell through to the
+  // generic 500 below — a malformed query string reported back as a
+  // server error. Found while adding the submissions endpoint's own
+  // validation and checking this file for how errors were formatted
+  // elsewhere, not assumed.
+  if (err instanceof ZodError) {
+    const message = err.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join("; ");
+    res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message } });
     return;
   }
 

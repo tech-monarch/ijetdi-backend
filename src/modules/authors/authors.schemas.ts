@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalEmail, optionalUrl } from "../../lib/zodHelpers.js";
 
 export const authorCreateSchema = z.object({
   slug: z.string().min(1),
@@ -10,9 +11,9 @@ export const authorCreateSchema = z.object({
   country: z.string().optional(),
   bio: z.string().optional(),
   orcid: z.string().optional(),
-  profileImage: z.string().url().optional(),
-  website: z.string().url().optional(),
-  email: z.string().email().optional(),
+  profileImage: optionalUrl(),
+  website: optionalUrl(),
+  email: optionalEmail(),
 });
 
 export const authorUpdateSchema = authorCreateSchema.partial();

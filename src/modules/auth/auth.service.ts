@@ -28,10 +28,13 @@ export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
   // Don't distinguish "wrong email" from "wrong password" in the
   // message, to avoid leaking which emails are registered — per
-  // API_DOCUMENTATION.md's Auth section.
+  // API_DOCUMENTATION.md's Auth section. A deactivated account gets the
+  // same generic message too, for the same reason — confirming "this
+  // account exists but is deactivated" is itself information leakage.
   const invalidCredentials = () => new ApiError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
 
   if (!user) throw invalidCredentials();
+  if (!user.active) throw invalidCredentials();
 
   const valid = await argon2.verify(user.passwordHash, password);
   if (!valid) throw invalidCredentials();
@@ -46,6 +49,23 @@ export async function getMe(userId: string | undefined) {
   return toPublicUser(user);
 }
 
+/**
+ * Issues a real, single-use, expiring password-reset token for a given
+ * user and returns the frontend URL to complete it. Factored out of
+ * forgotPassword() below so users.service.ts's createUser can reuse the
+ * exact same token mechanism for a new account's "set your password"
+ * link, rather than ever emailing a plaintext initial password.
+ */
+export async function issuePasswordResetToken(userId: string): Promise<string> {
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+  await prisma.passwordResetToken.create({ data: { userId, tokenHash, expiresAt } });
+
+  return `${env.FRONTEND_BASE_URL.replace(/\/$/, "")}/reset-password?token=${rawToken}`;
+}
+
 export async function forgotPassword(email: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email } });
   // Always behave the same regardless of whether the email exists —
@@ -53,15 +73,7 @@ export async function forgotPassword(email: string): Promise<void> {
   // email when a user actually matched.
   if (!user) return;
 
-  const rawToken = randomBytes(32).toString("hex");
-  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
-
-  await prisma.passwordResetToken.create({
-    data: { userId: user.id, tokenHash, expiresAt },
-  });
-
-  const resetUrl = `${env.FRONTEND_BASE_URL.replace(/\/$/, "")}/reset-password?token=${rawToken}`;
+  const resetUrl = await issuePasswordResetToken(user.id);
 
   await sendEmail({
     to: user.email,

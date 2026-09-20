@@ -15,6 +15,17 @@ describe("research-assistant: chunkArticle", () => {
     expect(chunks).toHaveLength(2);
   });
 
+  it("strips HTML tags and decodes entities from stored content, preserving paragraph breaks", () => {
+    const content = "<p>First <strong>paragraph</strong> here &amp; more.</p><h2>A heading</h2><p>Second one.</p>";
+    const chunks = chunkArticle({ title: "T", abstract: "A", content });
+    const body = chunks.filter((c) => c.sectionName === "Content");
+    const joined = body.map((c) => c.chunkText).join(" ");
+    expect(joined).not.toMatch(/<[^>]+>/);
+    expect(joined).toContain("First paragraph here & more.");
+    expect(joined).toContain("A heading");
+    expect(joined).toContain("Second one.");
+  });
+
   it("keeps a short body as a single Content chunk", () => {
     const content = "First paragraph here.\n\nSecond paragraph here.";
     const chunks = chunkArticle({ title: "T", abstract: "A", content });

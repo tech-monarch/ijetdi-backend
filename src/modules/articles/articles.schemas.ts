@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalUrl } from "../../lib/zodHelpers.js";
 import { ARTICLE_STATUSES } from "../../lib/editorialWorkflow.js";
 
 const articleStatusEnum = z.enum(ARTICLE_STATUSES);
@@ -19,7 +20,7 @@ export const articleCreateSchema = z.object({
   revisedDate: z.coerce.date().optional(),
   acceptedDate: z.coerce.date().optional(),
   publishedDate: z.coerce.date().optional(),
-  pdfUrl: z.string().url().optional(),
+  pdfUrl: optionalUrl(),
   supplementaryFiles: z.array(z.string().url()).default([]),
   references: z.array(z.string()).default([]),
   license: z.string().optional(),
@@ -27,11 +28,15 @@ export const articleCreateSchema = z.object({
   area: z.string().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
-  seoCanonicalUrl: z.string().url().optional(),
+  seoCanonicalUrl: optionalUrl(),
   // Ordered author ids — byline order is the array order (position is
   // derived from index, not sent explicitly). See DATABASE_SCHEMA.md's
   // ArticleAuthor join-table note.
   authorIds: z.array(z.string()).default([]),
+  // Editorial team — who handled this article, separate from authorship
+  // above. Unordered (plain implicit m2m — see DATABASE_SCHEMA.md's
+  // ArticleEditorialTeam entry).
+  editorIds: z.array(z.string()).default([]),
 });
 
 export const articleUpdateSchema = articleCreateSchema.partial();

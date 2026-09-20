@@ -27,6 +27,72 @@ function renderTemplate(template: EmailTemplate, data: Record<string, unknown>):
         `,
       };
     }
+    case "submission-received": {
+      const name = String(data.name ?? "");
+      const title = String(data.title ?? "");
+      return {
+        subject: "We received your manuscript submission",
+        html: `
+          <p>Hi ${name},</p>
+          <p>Thanks for submitting <strong>${title}</strong>. We've received your manuscript and
+          it's now awaiting initial editorial screening. We'll be in touch as it moves through
+          review.</p>
+        `,
+      };
+    }
+    case "submission-notify-editors": {
+      const title = String(data.title ?? "");
+      const correspondingAuthor = String(data.correspondingAuthor ?? "");
+      const reviewUrl = String(data.reviewUrl ?? "");
+      return {
+        subject: `New submission: ${title}`,
+        html: `
+          <p>A new manuscript has been submitted.</p>
+          <p><strong>${title}</strong><br>Corresponding author: ${correspondingAuthor}</p>
+          <p><a href="${reviewUrl}">Open it in the admin</a> to begin screening.</p>
+        `,
+      };
+    }
+    case "review-assigned": {
+      const reviewerName = String(data.reviewerName ?? "");
+      const title = String(data.title ?? "");
+      const dueDate = data.dueDate ? String(data.dueDate) : null;
+      return {
+        subject: `You've been invited to review: ${title}`,
+        html: `
+          <p>Hi ${reviewerName},</p>
+          <p>You've been invited to review <strong>${title}</strong>.
+          ${dueDate ? `We'd appreciate your review by <strong>${dueDate}</strong>.` : ""}</p>
+          <p>Log in and open "My Reviews" to view the manuscript and submit your recommendation.</p>
+        `,
+      };
+    }
+    case "review-submitted": {
+      const reviewerName = String(data.reviewerName ?? "");
+      const title = String(data.title ?? "");
+      const recommendation = String(data.recommendation ?? "");
+      const reviewUrl = String(data.reviewUrl ?? "");
+      return {
+        subject: `Review submitted: ${title}`,
+        html: `
+          <p>${reviewerName} has submitted a review for <strong>${title}</strong>
+          (recommendation: ${recommendation}).</p>
+          <p><a href="${reviewUrl}">Open the manuscript's reviews</a> in the admin.</p>
+        `,
+      };
+    }
+    case "user-account-created": {
+      const name = String(data.name ?? "");
+      const setPasswordUrl = String(data.setPasswordUrl ?? "");
+      return {
+        subject: "Your account has been created",
+        html: `
+          <p>Hi ${name},</p>
+          <p>An account has been created for you. <a href="${setPasswordUrl}">Set your
+          password</a> to log in. This link expires in 1 hour.</p>
+        `,
+      };
+    }
     default: {
       const _exhaustive: never = template;
       throw new Error(`Unknown email template: ${_exhaustive}`);

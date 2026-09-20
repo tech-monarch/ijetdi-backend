@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalUrl } from "../../lib/zodHelpers.js";
 
 const editorRoleEnum = z.enum([
   "editor_in_chief",
@@ -17,7 +18,7 @@ export const editorCreateSchema = z.object({
   institution: z.string().optional(),
   country: z.string().optional(),
   bio: z.string().optional(),
-  profileImage: z.string().url().optional(),
+  profileImage: optionalUrl(),
   orcid: z.string().optional(),
   researchInterests: z.array(z.string()).default([]),
   displayOrder: z.coerce.number().int().default(0),

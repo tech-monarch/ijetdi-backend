@@ -4,7 +4,13 @@ import { forbidden, unauthorized } from "../../lib/envelope.js";
 import { requirePermission } from "../../middleware/requireAuth.js";
 import { validateBody } from "../../middleware/validate.js";
 import { camelQuery } from "../../middleware/caseConversion.js";
-import { reviewerCreateSchema, reviewerUpdateSchema, reviewListQuerySchema } from "./reviewers-reviews.schemas.js";
+import {
+  reviewerCreateSchema,
+  reviewerUpdateSchema,
+  reviewListQuerySchema,
+  reviewCreateSchema,
+  reviewSelfUpdateSchema,
+} from "./reviewers-reviews.schemas.js";
 import * as reviewersReviewsService from "./reviewers-reviews.service.js";
 
 // Mounted only under /api/admin and /api/reviewer — never /api directly.
@@ -67,6 +73,29 @@ reviewersAdminRouter.get("/reviews", requirePermission("reviews.read"), async (r
   }
 });
 
+// GET /api/admin/reviews/:id — Permission: reviews.read.
+reviewersAdminRouter.get("/reviews/:id", requirePermission("reviews.read"), async (req, res, next) => {
+  try {
+    ok(res, await reviewersReviewsService.getReviewById(req.params.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/reviews — assign a reviewer to a manuscript. Permission: reviews.manage.
+reviewersAdminRouter.post(
+  "/reviews",
+  requirePermission("reviews.manage"),
+  validateBody(reviewCreateSchema),
+  async (req, res, next) => {
+    try {
+      ok(res, await reviewersReviewsService.assignReview(req.body), 201);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 // GET /api/reviewer/my-reviews — Any authenticated reviewer. Scoped to
 // req.user.reviewerId from the session — a reviewer can never pass a
 // different reviewerId to see someone else's reviews.
@@ -79,3 +108,37 @@ reviewerSelfRouter.get("/my-reviews", requirePermission("reviews.read"), async (
     next(err);
   }
 });
+
+// GET /api/reviewer/manuscripts/:id — basic manuscript info (title,
+// abstract, the manuscript file), only when this reviewer actually has
+// an assignment for it — see getManuscriptForReviewer's own comment on
+// why this exists as its own narrow endpoint rather than widening the
+// admin articles permissions.
+reviewerSelfRouter.get("/manuscripts/:id", requirePermission("reviews.read"), async (req, res, next) => {
+  try {
+    if (!req.user) throw unauthorized();
+    if (!req.user.reviewerId) throw forbidden("This account is not linked to a reviewer profile.");
+    ok(res, await reviewersReviewsService.getManuscriptForReviewer(req.params.id, req.user.reviewerId));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/reviewer/reviews/:id — a reviewer submits (or declines)
+// their own assigned review. Ownership (req.user.reviewerId must match
+// the review's reviewerId) is checked both here and again in the service
+// — see submitOwnReview's own comment on why it re-checks.
+reviewerSelfRouter.patch(
+  "/reviews/:id",
+  requirePermission("reviews.read"),
+  validateBody(reviewSelfUpdateSchema),
+  async (req, res, next) => {
+    try {
+      if (!req.user) throw unauthorized();
+      if (!req.user.reviewerId) throw forbidden("This account is not linked to a reviewer profile.");
+      ok(res, await reviewersReviewsService.submitOwnReview(req.params.id, req.user.reviewerId, req.body));
+    } catch (err) {
+      next(err);
+    }
+  },
+);

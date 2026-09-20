@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { badRequest, buildPagination, notFound } from "../../lib/envelope.js";
 import { isValidTransition, type ArticleStatusValue } from "../../lib/editorialWorkflow.js";
+import { sanitizeRichTextContent } from "../../lib/sanitizeContent.js";
 import { deleteArticleChunks, ingestArticle } from "../research-assistant/ingestion.service.js";
 import type { z } from "zod";
 import type {
@@ -18,11 +19,15 @@ const authorInclude = {
   },
   volume: { select: { number: true } },
   issue: { select: { number: true } },
+  // Editorial team — full resolved Editor objects, alongside however
+  // authors is already resolved here. Unordered (see
+  // DATABASE_SCHEMA.md's ArticleEditorialTeam entry).
+  editors: true,
 } satisfies Prisma.ArticleInclude;
 
 type ArticleWithRelations = Prisma.ArticleGetPayload<{ include: typeof authorInclude }>;
 
-/** Public/enriched shape: resolved authors[] (full objects, ordered) + volumeNumber/issueNumber. */
+/** Public/enriched shape: resolved authors[]/editors[] (full objects) + volumeNumber/issueNumber. */
 function enrich(article: ArticleWithRelations) {
   const { authors, volume, issue, ...rest } = article;
   return {
@@ -129,15 +134,29 @@ export async function listAdmin(query: z.infer<typeof articleAdminListQuerySchem
   return { data: rows.map(enrich), pagination: buildPagination(query.page, query.limit, total) };
 }
 
-/** Raw admin shape: author IDs (ordered), not resolved Author objects — what ArticleForm's author-picker needs. */
+/** Raw admin shape: author IDs (ordered) + editor IDs (unordered) — not resolved objects — what ArticleForm's pickers need. */
 export async function getAdminById(id: string) {
   const article = await prisma.article.findUnique({
     where: { id },
-    include: { authors: { orderBy: { position: "asc" }, select: { authorId: true } } },
+    include: {
+      authors: { orderBy: { position: "asc" }, select: { authorId: true } },
+      editors: { select: { id: true } },
+    },
   });
   if (!article) throw notFound("ARTICLE_NOT_FOUND", `Not found: ${id}`);
-  const { authors, ...rest } = article;
-  return { ...rest, authorIds: authors.map((a) => a.authorId) };
+  const { authors, editors, ...rest } = article;
+  return { ...rest, authorIds: authors.map((a) => a.authorId), editorIds: editors.map((e) => e.id) };
+}
+
+// Sanitizes rich-text HTML before it's ever persisted — see
+// src/lib/sanitizeContent.ts. Called on both create and update,
+// independent of whatever sanitization the frontend's own TipTap ->
+// DOMPurify pass already did; never trust that as the source of truth.
+function sanitizeContentField<T extends { content?: string | null }>(data: T): T {
+  if (typeof data.content === "string") {
+    return { ...data, content: sanitizeRichTextContent(data.content) };
+  }
+  return data;
 }
 
 function splitAuthorIds<T extends { authorIds?: string[] }>(data: T) {
@@ -145,11 +164,23 @@ function splitAuthorIds<T extends { authorIds?: string[] }>(data: T) {
   return { authorIds: authorIds ?? [], articleData };
 }
 
+function splitEditorIds<T extends { editorIds?: string[] }>(data: T) {
+  const { editorIds, ...articleData } = data;
+  return { editorIds: editorIds ?? [], articleData };
+}
+
 export async function createArticle(data: z.infer<typeof articleCreateSchema>) {
-  const { authorIds, articleData } = splitAuthorIds(data);
+  const sanitized = sanitizeContentField(data);
+  const { authorIds, articleData: withoutAuthors } = splitAuthorIds(sanitized);
+  const { editorIds, articleData } = splitEditorIds(withoutAuthors);
 
   return prisma.$transaction(async (tx) => {
-    const article = await tx.article.create({ data: articleData });
+    const article = await tx.article.create({
+      data: {
+        ...articleData,
+        ...(editorIds.length > 0 ? { editors: { connect: editorIds.map((id) => ({ id })) } } : {}),
+      },
+    });
     if (authorIds.length > 0) {
       await tx.articleAuthor.createMany({
         data: authorIds.map((authorId, position) => ({ articleId: article.id, authorId, position })),
@@ -163,10 +194,23 @@ export async function updateArticle(id: string, data: z.infer<typeof articleUpda
   const existing = await prisma.article.findUnique({ where: { id } });
   if (!existing) throw notFound("ARTICLE_NOT_FOUND", `Not found: ${id}`);
 
-  const { authorIds, articleData } = splitAuthorIds(data);
+  const sanitized = sanitizeContentField(data);
+  const { authorIds, articleData: withoutAuthors } = splitAuthorIds(sanitized);
+  const { editorIds, articleData } = splitEditorIds(withoutAuthors);
 
   const result = await prisma.$transaction(async (tx) => {
-    await tx.article.update({ where: { id }, data: articleData });
+    await tx.article.update({
+      where: { id },
+      data: {
+        ...articleData,
+        // Only touch the editorial team if editorIds was explicitly sent
+        // (mirrors authorIds' own "explicit empty array vs. omitted"
+        // distinction below) — an update that omits editorIds entirely
+        // leaves the team untouched; explicitly sending editorIds: []
+        // clears it.
+        ...(data.editorIds !== undefined ? { editors: { set: editorIds.map((eid) => ({ id: eid })) } } : {}),
+      },
+    });
     if (data.authorIds !== undefined) {
       await tx.articleAuthor.deleteMany({ where: { articleId: id } });
       if (authorIds.length > 0) {

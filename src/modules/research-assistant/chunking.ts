@@ -51,6 +51,39 @@ function splitParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
+// Article.content is stored as sanitized HTML (see
+// src/lib/sanitizeContent.ts — sanitization happens on write, before this
+// ever runs). This is deliberately NOT a security-critical sanitizer
+// itself: by the time chunkArticle() sees this content, it has already
+// been through the real allowlist sanitizer once (on write) and will be
+// sanitized again client-side before ever being rendered to a browser —
+// this function's only job is making chunk text readable in a citation
+// (stripping tags a person shouldn't see, like "<strong>"), not
+// preventing XSS. Kept local/dependency-free rather than pulling in the
+// sanitize-html package here, matching this module's existing "pure,
+// unit-testable without external dependencies" design (see
+// tests/unit/chunking.test.ts).
+function htmlToPlainText(html: string): string {
+  return html
+    // Block-level boundaries become paragraph breaks, so splitParagraphs()
+    // above still groups chunk text sensibly instead of running every
+    // heading/paragraph/list-item together on one line.
+    .replace(/<\/(p|div|li|h[1-6]|blockquote|tr)>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    // Strip every remaining tag.
+    .replace(/<[^>]+>/g, "")
+    // Decode the handful of entities TipTap/sanitize-html output actually
+    // produce — not a general-purpose HTML entity decoder.
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
 function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
@@ -142,7 +175,7 @@ export function chunkArticle(article: ChunkableArticle): ArticleChunkInput[] {
   }
 
   if (article.content) {
-    const paragraphs = splitParagraphs(article.content);
+    const paragraphs = splitParagraphs(htmlToPlainText(article.content));
     const bodyChunks = chunkParagraphs(paragraphs);
     for (const text of bodyChunks) {
       chunks.push({ sectionName: "Content", chunkText: text, chunkIndex: index++ });

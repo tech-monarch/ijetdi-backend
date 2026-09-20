@@ -373,3 +373,390 @@ has one folder per resource (schemas/service/routes), `src/lib/` holds
 shared business rules (permissions, editorial workflow, envelope, case
 conversion, and now the Gemini/Tavily clients), `src/middleware/` and
 `src/config/` hold cross-cutting infrastructure.
+
+## Rich Text Editor milestone (this session)
+
+The frontend replaced the plain `<textarea>` for `Article.content` with
+a real TipTap-based rich text editor, and added a new `content` field to
+`Publication` (a journal-level "about this journal" body — didn't exist
+before). This session's backend changes support both:
+
+- **New migration** (`prisma/migrations/20260906120000_add_publication_content/`)
+  — adds a nullable `content TEXT` column to `publications`. Additive,
+  non-destructive.
+- **New shared module**: `src/lib/sanitizeContent.ts` — a strict
+  `sanitize-html` allowlist matching exactly the TipTap extensions the
+  frontend enables (see `src/admin/shared/richTextEditor/` in the
+  frontend repo). Wired into both `articles.service.ts` and
+  `publications.service.ts`, on every create AND update, independent of
+  whatever the frontend's own sanitization pass already did.
+- **`chunking.ts` updated**: `Article.content` is now real HTML (it was
+  always `null` before this milestone, so the chunking pipeline never
+  had to deal with markup). Added a local `htmlToPlainText()` helper
+  (deliberately dependency-free, matching this module's existing
+  "pure, unit-testable" design) so chunk/citation text stays readable
+  instead of containing raw tags.
+- **New tests**: `tests/unit/sanitizeContent.test.ts` (8 tests — covers
+  real XSS payloads: script tags, `onerror`/`onclick` handlers,
+  `javascript:` URLs, `data:` URIs on images, disallowed style
+  properties, forced `rel="noopener noreferrer"` on links) and one new
+  case in `tests/unit/chunking.test.ts` covering HTML-to-plain-text
+  stripping. **58/58 tests pass** (was 49 before this session — 9 new).
+  `tsc` unchanged at 36 errors (all pre-existing Prisma-generation
+  artifacts, none in any file touched this session).
+
+**What was NOT verified live**: same category of limitation as every
+prior session — no real Postgres/Aiven connection was reachable here, so
+the new migration was never actually applied to a real database in this
+environment. The sanitizer itself (pure Node.js, no database) was
+genuinely exercised, including real XSS payloads, not just asserted.
+
+**Not in scope this session** (a separate, later milestone): Word/PDF/
+image document upload with content extraction and OCR, to populate the
+editor from an existing source file. This session only replaces manual
+typing with a real rich text editor — it doesn't add any new import
+pipeline.
+
+## Document Import Pipeline & Editorial Team milestone (this session)
+
+Two features, per the milestone spec: (1) a document import pipeline —
+upload a Word/PDF/image source file, get back extracted, sanitized
+rich-text HTML — and (2) Editorial Team — recording which editor(s)
+handled an article, separate from authorship.
+
+### Part 1 — Document Import Pipeline
+
+New module, `src/modules/import/`: `detectFileType.ts` (magic-byte
+detection), `docxImporter.ts` (mammoth), `renderPdfPage.ts` (its own
+module — see "gotchas" below), `ocr.ts` (Tesseract.js), `pdfImporter.ts`
+(pdfjs-dist text-layer extraction + heading heuristic + OCR fallback),
+`imageImporter.ts`, `import.service.ts` (orchestration), `import.routes.ts`
+(`POST /api/admin/import`, mounted in `app.ts` alongside the existing
+uploads router). New dependencies, versions verified against the real
+npm registry before installing: `@napi-rs/canvas@^1.0.9`,
+`mammoth@^1.12.3`, `pdfjs-dist@^6.3.289`, `tesseract.js@^7.0.0`.
+
+**Fixed while in this area**: `errorHandler.ts` had no `multer.MulterError`
+branch — an oversized upload (`LIMIT_FILE_SIZE`) fell through to the
+generic 500 handler instead of a clean 400. Confirmed by reading the file
+directly (the plan predicted this gap; verified it, not assumed it).
+Fixed for both the existing uploads endpoint and this new one.
+
+**Real gotchas found and fixed, beyond what the milestone spec
+anticipated** — each confirmed against a real hand-crafted fixture, not
+assumed:
+
+1. **pdfjs-dist v6 truncates a very long single-line `Tj` string operand**
+   (observed at ~100 characters) in this environment. Found because the
+   first hand-built PDF fixture's body text (one long `Tj` call) came
+   back cut off mid-word from `getTextContent()`. Not a
+   `standardFontDataUrl`/font-metrics issue (tested that theory directly
+   — providing `standardFontDataUrl` didn't change the truncation point).
+   Worked around by building the fixture the way real PDF generators
+   actually do — text wrapped across multiple `Tj`/`Td` operators, one
+   per visual line — which real-world PDFs (from Word, LibreOffice, print
+   drivers, etc.) already do as a matter of course, so this is unlikely
+   to affect real documents. Also used this to improve the heading/
+   paragraph heuristic: consecutive wrapped lines with a small Y-gap are
+   now merged into one `<p>`, rather than one paragraph per visual line.
+2. **tesseract.js v7's `createWorker` has two independent failure paths**
+   on worker-init failure (e.g. no network access to fetch language
+   data): it rejects the returned promise (catchable) *and* separately
+   throws inside an internal message-event listener when no
+   `errorHandler` option is configured — an uncaught exception that
+   crashes the whole Node process, bypassing any surrounding try/catch
+   entirely. Confirmed by watching it actually crash the process before
+   the fix. Fixed with a no-op `errorHandler` in `createWorker`'s
+   options — the real error still reaches the caller via the rejected
+   promise.
+3. **Suppressing that crash then let the underlying retry/fetch logic
+   hang far longer than useful** (confirmed: a 60-second kill wasn't
+   enough) rather than rejecting promptly. Added a 45-second hard
+   timeout (`Promise.race`-style wrapper) around both worker
+   initialization and recognition in `ocr.ts`, so one stuck OCR pass
+   can't hang the whole synchronous import request. Noted as a real,
+   secondary finding: even with the timeout firing correctly, the
+   underlying worker thread didn't visibly clean up within the test
+   process's lifetime — likely fine in a long-lived Express process
+   (the worker thread just lingers, doesn't block anything else), but
+   flagging it here rather than asserting it's harmless without a real
+   long-running server to check against.
+4. **One real TypeScript narrowing gotcha** (not an environment gap):
+   `Array.prototype.filter`'s type-guard overload only narrows when the
+   guarded type is a structural subtype of the array's element type.
+   `TextItem | TextMarkedContent`'s real shape (many pdfjs-dist-internal
+   fields) doesn't structurally match a minimal local `TextItemLike`, so
+   `.filter(hasTransform)` silently fell back to the non-narrowing
+   overload. Fixed with a manual loop instead of relying on `.filter`'s
+   type-guard narrowing at all.
+
+**Verified for real** (not asserted from docs): `@napi-rs/canvas` —
+created a canvas, drew to it, got back real PNG magic bytes.
+`pdfjs-dist` — real text-layer extraction (correct strings, correct
+per-character position/font-size data) and real page-to-PNG rendering
+against a hand-crafted PDF fixture, visually confirmed. `mammoth` — real
+DOCX→HTML conversion against a hand-crafted `.docx` (built via Python's
+stdlib `zipfile`), including a real mammoth-generated warning for an
+undefined referenced style. Tesseract's actual OCR *recognition* pass
+specifically could **not** be verified end-to-end — blocked by the same
+category of sandboxed-network limitation as Gemini/Tavily/Prisma-binaries
+elsewhere in this document (confirmed precisely: a real 403 from
+`cdn.jsdelivr.net` fetching language data, not a guess). Everything
+around it — worker creation, the timeout wrapper, error propagation, and
+the orchestration logic that calls it — was verified for real via the
+gotchas above and the mocked-OCR unit tests.
+
+**New tests**: `tests/unit/detectFileType.test.ts` (8),
+`tests/unit/docxImporter.test.ts` (3, real mammoth + mocked `uploadToR2`),
+`tests/unit/pdfImporter.test.ts` (4, real pdfjs-dist extraction for the
+text-based fixture + mocked render/OCR for the scanned-page fixture),
+`tests/unit/import.service.test.ts` (6, orchestration — upload-first
+ordering, embed-fallback decision both ways, unsupported-type rejection
+before upload, image-always-OCR'd). **21 new tests, all passing.**
+Fixtures in `tests/fixtures/`: `heading-and-paragraph.pdf` and
+`heading-and-paragraph.docx` (hand-crafted, real content, deliberately
+well over any usable-text-length threshold — see the milestone spec's
+own note on why a too-short fixture is a trap), `blank-no-text.pdf` (an
+empty content stream, for the scanned-page-detection path).
+
+### Part 2 — Editorial Team
+
+`Article.editors` / `Editor.articles`, a plain Prisma implicit m2m named
+`ArticleEditorialTeam` (no custom join model — unordered, unlike
+`ArticleAuthor`). Hand-written migration
+(`prisma/migrations/20260918130000_article_editorial_team/`) since
+`prisma migrate dev`/`validate` can't reach `binaries.prisma.sh` here
+(confirmed with the same 403 pattern as every other Prisma-binaries gap
+in this document). `articles.schemas.ts` gained `editorIds` (defaults to
+`[]`); `articles.service.ts`'s `enrich()` now includes resolved
+`editors[]` for public reads, `getAdminById()` now includes `editorIds`
+for the admin edit form, and create/update both wire `editors: { connect
+| set }` — update only touches the team when `editorIds` was explicitly
+sent (mirrors `authorIds`' own explicit-empty-array-vs-omitted rule).
+
+**Confirmed, traced precisely, not assumed**: exactly one new `tsc`
+error, exactly where the milestone spec predicted —
+`articles.service.ts`'s `editors.map((e) => e.id)` in `getAdminById()`,
+`Parameter 'e' implicitly has an 'any' type` — same root cause
+(Prisma client can't regenerate in this sandbox) as every other baseline
+error in this file. Diffed the full `tsc` output before/after this
+change line-by-line to confirm it's the *only* addition, not assumed
+from the error count alone. `tsc` error count: **37 with this one
+new error present** — but see below.
+
+### Verification summary
+
+- **Tests**: 79/79 unit tests passing (58 before this session + 21 new).
+  The two integration suites (`articles.test.ts`, `auth.test.ts`) still
+  can't run in this environment — same pre-existing
+  `@prisma/client did not initialize yet` root cause documented above,
+  not a regression from this session's changes.
+- **`tsc --noEmit`**: **37 errors — 36 baseline + exactly 1 new**, traced
+  precisely to `articles.service.ts`'s `editors.map((e) => e.id)` in
+  `getAdminById()` (Editorial Team), same root cause as every other
+  baseline error (Prisma client can't regenerate in this sandbox) — this
+  is the one new error the milestone spec itself predicted. (A separate,
+  unrelated `.filter()` type-guard narrowing gotcha turned up in
+  `pdfImporter.ts` — gotcha #4 above — and was fixed on its own merits;
+  it never contributed to the baseline count either way, since it was
+  caught and fixed within the same session before the baseline was ever
+  measured with it present.)
+- `npm run build` / `tsc --noEmit -p tsconfig.json`: same 36 pre-existing
+  Prisma-generation-artifact errors, all in files untouched by this
+  session, confirmed by diffing line-by-line against the pre-session
+  output, plus the one new Editorial Team error above.
+- Ran a real DOCX and a real PDF fixture all the way through
+  `import.service.ts` end to end (via the unit test suite) and confirmed
+  the final sanitized HTML matches `sanitizeContent.ts`'s allowlist — no
+  unexpected stripped content, no leaked disallowed tags.
+
+**What was NOT verified live**: same category of limitation as every
+prior session — no real Postgres/Aiven connection, no real R2 credentials,
+so the new migration was never applied to a real database, and R2
+uploads inside `import.service.ts` are exercised only via the mocked
+`uploadToR2` in unit tests, not a real upload. Tesseract's real
+recognition pass (as opposed to worker lifecycle/error-handling, which
+was genuinely exercised) also couldn't be verified live — see the
+gotchas section above for exactly what was and wasn't confirmed.
+
+## Submissions, Peer Review & User Accounts milestone (this session)
+
+Closed three structural gaps flagged after a full platform review (see
+the frontend repo's `PROJECT_STATUS.md` for the review itself): no
+author-facing manuscript submission path, no working peer-review
+assignment/submission workflow despite the data model already existing
+for it, and no way to create a staff login without shell access to the
+database.
+
+### Part 1 — Manuscript submissions
+
+New module, `src/modules/submissions/`. `POST /api/submissions` (public,
+rate-limited 3/hour/IP) — real magic-byte file validation (reusing
+`detectImportFileKind` from the Document Import Pipeline), uploads the
+original file to R2 **before** anything else so a later failure never
+loses it, resolves each author to a real `Author` record (matched by
+email, created otherwise), generates a collision-checked slug
+(`src/lib/slugify.ts` — new utility; every other model here takes an
+admin-typed slug, and a public submission has no admin present to type
+one), then creates the Article via the same `createArticle()` an admin's
+own form uses, with `status: "submitted"`. Best-effort confirmation/
+notification emails, never blocking the submission itself.
+
+### Part 2 — Peer review, for real
+
+The `Review` model already had almost everything needed
+(`manuscriptId`, `reviewerId`, `recommendation`, `comments`,
+`submittedAt`) — it just had no working create/update endpoints, and its
+`status` field was a free-text placeholder with a comment literally
+saying "define the real enum when the review-submission workflow is
+actually built." That's this session. Added a real `ReviewStatus` enum
+(`pending`/`completed`/`declined`), `invitedAt`/`dueDate`, and a
+`@@unique([manuscriptId, reviewerId])` constraint so a reviewer can't be
+double-assigned. New endpoints: `POST /api/admin/reviews` (assign,
+emails the reviewer), `GET /api/admin/reviews[/:id]`, `PATCH
+/api/reviewer/reviews/:id` (a reviewer submits their own review —
+ownership checked both in the route and again in the service, since
+"a reviewer can only touch their own review" is the entire point of that
+endpoint existing separately from the admin one).
+
+**A real, previously-invisible bug found while wiring the frontend up to
+this**: the reviewer-facing screens (`MyReviews.jsx`,
+`ReviewerDetail.jsx`) called `reviewerService.getReviewerById()` and
+`articleService.getById()` — both admin-only endpoints requiring
+`reviewers.manage`/`articles.update`, permissions a plain `reviewer`
+role has never held. Against the mock-data era this never surfaced;
+against this real backend it would have been a 403 the first time an
+actual reviewer logged in. Fixed with a new, deliberately narrow
+endpoint, `GET /api/reviewer/manuscripts/:id`, that returns a minimal
+manuscript projection (title, abstract, file, status) **only** when a
+`Review` row proves this reviewer is genuinely assigned to it — not a
+relaxation of the admin permissions, a purpose-built least-privilege
+lookup instead.
+
+A second bug in the same area: `ReviewerList.jsx` read
+`reviewer.assignedManuscriptIds?.length` — a field that never existed on
+the real `Reviewer` model (a mock-data-era leftover), so that column
+silently always rendered 0. Fixed with a real computed count
+(`listReviewers()` now includes `_count` on the `reviews` relation).
+
+Also added, since it was a natural (and necessary) extension of the same
+area: `POST`/`PATCH /api/admin/reviewers` were already real backend
+routes that the frontend never called (`reviewerService.js` was
+read-only) — assigning reviewers isn't very useful if there's no way to
+add new ones to the pool. Now wired up (`ReviewerDetail.jsx` rebuilt from
+a read-only view into a real create/edit form).
+
+### Part 3 — User accounts
+
+New module, `src/modules/users/`. Full admin CRUD, gated by
+`users.manage` (super_admin only). **Deliberately never accepts a
+password from the admin creating the account** — a random, never-
+revealed placeholder is hashed and stored purely to satisfy the `NOT
+NULL` constraint, and the new user gets a real "set your password" link
+through the exact same single-use token mechanism forgot-password uses
+(factored `issuePasswordResetToken` out of `auth.service.ts` specifically
+so both flows share it, rather than duplicating the token logic). Added
+`User.active` (default `true`) so an account can be revoked without a
+real delete — checked in `login()`, where a deactivated account gets the
+identical generic error message as a wrong password (distinguishing the
+two would itself leak account existence).
+
+### A real, pre-existing bug fixed while adding this — errorHandler.ts
+
+Found while checking how the submissions endpoint's own validation
+errors would be formatted: **`errorHandler.ts` had no `ZodError` branch
+at all.** A few existing routes (`contact.routes.ts`,
+`reviewers-reviews.routes.ts`, `search.routes.ts`) call a schema's
+`.parse()` directly on the query string rather than going through
+`validate.ts`'s `safeParse`-based middleware — a malformed query string
+on any of them would throw a raw `ZodError` that fell through to the
+generic 500 handler. Fixed centrally, protecting both those pre-existing
+routes and every new one added this session.
+
+### Real Postgres verification — a first for this project
+
+Every prior session in this document has flagged the same limitation:
+`prisma generate`/`migrate`/`validate` can't reach
+`binaries.prisma.sh` in this sandboxed environment, so migrations could
+only ever be reviewed by eye, never actually run. This session, that
+changed: `archive.ubuntu.com`/`security.ubuntu.com` (used for Ubuntu
+package installation) turned out to be reachable, so a real local
+PostgreSQL 16 + the `postgresql-16-pgvector` package were installed and
+used to **apply every migration in this project, in order, end to end,
+against a real database for the first time.**
+
+This caught a real, previously-undetected bug: migration
+`20260905094825_idjeti` tried to `DROP INDEX
+"article_chunks_embedding_idx"` — an index the immediately-preceding
+migration (`20260905093316_idjeti`) had already dropped. On a fresh
+database, `prisma migrate deploy` would have failed outright at that
+exact step with "index does not exist." Fixed with `DROP INDEX IF
+EXISTS`, confirmed idempotent both ways: a no-op on a fresh deploy, and
+identical to the original behavior on any database where this migration
+already ran successfully before this fix. Re-ran the entire chain from
+scratch on a fresh database afterward — all eight migrations now apply
+cleanly in sequence.
+
+With a real, fully-migrated database available, also directly verified
+(via raw SQL, since a real generated Prisma Client remains unavailable —
+see below) that this session's own new constraints behave exactly as
+designed: a duplicate `(manuscript_id, reviewer_id)` insert is genuinely
+rejected by the unique index; an invalid `ReviewStatus` value is
+genuinely rejected by the enum type; `users.active` genuinely defaults
+to `true`; and deleting an `Editor` genuinely cascades to remove the
+corresponding `_ArticleEditorialTeam` row. None of this was possible to
+confirm in any prior session.
+
+**What real Postgres access did *not* fix**: a working, fully-typed
+`@prisma/client` still requires the query engine binary itself (not just
+a database to connect to), and that binary is still only fetchable from
+`binaries.prisma.sh`, which remains blocked. This was tested directly,
+twice, rather than assumed: a plain `prisma generate` still 403s on the
+engine download even with `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1`
+set; enabling the `driverAdapters` preview feature and installing
+`@prisma/adapter-pg` (which lets Prisma execute queries through the
+plain `pg` driver at runtime, bypassing the engine binary for query
+*execution*) still requires the same blocked binary at `generate` time,
+for schema parsing/DMMF generation — confirmed by attempting it, not
+assumed from documentation. Checked one more avenue directly: the
+`@prisma/engines` npm package (on the npm registry, which *is*
+reachable) turned out to be a 95KB installer/fetcher wrapper, not a
+bundled binary — inspected its packed contents directly to confirm. Both
+experiments (the `driverAdapters` preview feature, the `@prisma/adapter-
+pg` dependency) were fully reverted, confirmed byte-identical to the
+pre-experiment `schema.prisma` afterward. The two integration test files
+(`articles.test.ts`, `auth.test.ts`) that need a real `PrismaClient`
+instance still can't run here — this is now a precisely
+triple-confirmed limitation, not an assumed one.
+
+### Verification summary
+
+- **Tests**: 113/113 unit tests passing (79 before this session, 34 new:
+  5 for `slugify`, 7 for the submissions orchestration, 13 for the
+  reviews/reviewers additions, 9 for user account management). The two
+  integration suites still can't run — see above.
+- **`tsc --noEmit`**: 38 errors — the 36 pre-existing baseline, plus 2
+  new, both precisely traced to the same root cause (Prisma client types
+  unavailable without real `generate`), not new type-safety gaps: one is
+  the milestone-predicted `editors.map` error from the prior session,
+  still present; the other is a new `implicitly has an 'any' type` on a
+  destructured `_count` in `listReviewers()` — attempted a real fix with
+  an explicit type annotation, but that only moved the same root-cause
+  error to the surrounding `.map()` callback rather than resolving it
+  (also confirmed by directly re-running `tsc` after the attempt, not
+  assumed), so kept the simpler, equally-correct code rather than adding
+  complexity for no reduction in error count.
+- Real Postgres verification, as detailed above — migrations, real
+  constraint behavior, cascade behavior.
+- Frontend: `npm run build` succeeds; `npx oxlint src` — 9 warnings, 0
+  errors, unchanged from baseline (confirmed the same count, not just
+  "still passes").
+
+**What still couldn't be verified live**: a real HTTP request against a
+running instance of this backend end-to-end (the app still can't boot
+without a working `PrismaClient` — real Postgres access doesn't change
+that, since the blocker is the query engine binary, not the database
+connection); real Resend delivery of any of the five new/reused email
+templates; and, as with every session before this one, an actual browser
+click-through of any of the new admin screens or the public submission
+form.

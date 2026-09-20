@@ -76,10 +76,15 @@ enum ReviewRecommendation {
   reject
 }
 
-// Free-form today per DATABASE_SCHEMA.md ("not modeled as a formal enum
-// anywhere... define the real enum when the review-submission workflow is
-// actually built"). Kept as a plain string column (see Review model) —
-// not a Prisma enum — precisely because the doc says not to invent one yet.
+// Was free-form (see DATABASE_SCHEMA.md's historical note: "not modeled
+// as a formal enum anywhere... define the real enum when the
+// review-submission workflow is actually built"). That workflow is now
+// built (Reviews/Submissions milestone) — this is the real enum.
+enum ReviewStatus {
+  pending
+  completed
+  declined
+}
 
 enum IndexingStatus {
   unconfirmed
@@ -156,6 +161,17 @@ model Publication {
   website        String?
   logo           String?
   cover          String?
+  // Rich-text HTML body for the publication's own public page (e.g. an
+  // About/history/mission page for the journal itself) — added because a
+  // journal needs to be able to publish something about itself, the same
+  // way an Article needs a body. Sanitized server-side on every write
+  // (see src/lib/sanitizeContent.ts) before being persisted; sanitized
+  // again client-side immediately before rendering (defense in depth for
+  // user-generated HTML reaching the public internet). Nullable: most
+  // publications won't have this filled in yet, and the public page falls
+  // back to the existing static About content when it's empty — see
+  // src/pages/About.jsx.
+  content        String?
   status         ActiveArchivedStatus
   seoTitle       String?              @map("seo_title")
   seoDescription String?              @map("seo_description")
@@ -238,6 +254,12 @@ model Article {
   slug               String        @unique
   title              String
   abstract           String
+  // Rich-text HTML body, authored via the TipTap editor on the frontend.
+  // Sanitized server-side on every write (see src/lib/sanitizeContent.ts)
+  // before being persisted — never trust that the frontend's own
+  // sanitization pass already made this safe. Sanitized again client-side
+  // immediately before rendering on the public article page, as a second,
+  // independent layer.
   content            String?
   publicationId      String        @map("publication_id")
   volumeId           String?       @map("volume_id")
@@ -273,6 +295,13 @@ model Article {
   authors     ArticleAuthor[]
   reviews     Review[]
   chunks      ArticleChunk[]
+  // Editorial team — who handled this article, separate from authorship
+  // (ArticleAuthor above) and separate from the publication's full
+  // editorial board (Editor.publicationId). Deliberately a plain Prisma
+  // implicit many-to-many, unlike ArticleAuthor (which needs a `position`
+  // column for byline ordering) — an editorial team isn't conventionally
+  // ordered the way authorship is. See DATABASE_SCHEMA.md.
+  editors     Editor[]         @relation("ArticleEditorialTeam")
 
   @@index([publicationId])
   @@index([status])
@@ -352,6 +381,8 @@ model Editor {
   updatedAt          DateTime     @updatedAt @map("updated_at")
 
   publication Publication @relation(fields: [publicationId], references: [id])
+  // Reciprocal side of Article.editors — see that field's comment.
+  articles    Article[]   @relation("ArticleEditorialTeam")
 
   @@index([publicationId])
   @@map("editors")
@@ -389,16 +420,26 @@ model Review {
   recommendation ReviewRecommendation?
   comments       String?
   submittedAt    DateTime?             @map("submitted_at")
-  // Free text today per DATABASE_SCHEMA.md — "not modeled as a formal
-  // enum anywhere... define the real enum when the review-submission
-  // workflow is actually built." Only "completed" exists in sample data.
-  status         String
+  // Real enum now (see ReviewStatus above) — was a free-text placeholder
+  // until the review-submission workflow was built for real.
+  status         ReviewStatus          @default(pending)
+  // When the reviewer was invited/assigned — distinct from createdAt only
+  // in intent (createdAt is a generic audit column every model has;
+  // invitedAt is meaningful workflow data an editor/reviewer-facing UI
+  // reads directly, e.g. "assigned 5 days ago").
+  invitedAt      DateTime              @default(now()) @map("invited_at")
+  // Optional editor-set deadline for the review — surfaced in the
+  // reviewer's assignment email and "My Reviews" list.
+  dueDate        DateTime?             @map("due_date") @db.Date
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
 
   manuscript Article  @relation(fields: [manuscriptId], references: [id])
   reviewer   Reviewer @relation(fields: [reviewerId], references: [id])
 
+  // A reviewer should only be assigned to a given manuscript once —
+  // re-inviting is an update to the existing assignment, not a second row.
+  @@unique([manuscriptId, reviewerId])
   @@index([manuscriptId])
   @@index([reviewerId])
   @@map("reviews")
@@ -455,6 +496,11 @@ model User {
   passwordHash String   @map("password_hash")
   role         UserRole
   reviewerId   String?  @unique @map("reviewer_id")
+  // Lets an admin revoke a departed staff member's access without a real
+  // delete (this project has no real delete anywhere — see
+  // docs/PERMISSIONS.md). Checked at login; an inactive account can't
+  // authenticate even with the correct password.
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

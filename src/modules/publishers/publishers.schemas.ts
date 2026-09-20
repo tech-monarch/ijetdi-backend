@@ -1,14 +1,15 @@
 import { z } from "zod";
+import { optionalEmail, optionalUrl } from "../../lib/zodHelpers.js";
 
 export const publisherCreateSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
   description: z.string().optional(),
-  logo: z.string().url().optional(),
+  logo: optionalUrl(),
   address: z.string().optional(),
   country: z.string().optional(),
-  website: z.string().url().optional(),
-  email: z.string().email().optional(),
+  website: optionalUrl(),
+  email: optionalEmail(),
   phone: z.string().optional(),
   status: z.enum(["active", "archived"]),
   seoTitle: z.string().optional(),
