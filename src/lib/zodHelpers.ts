@@ -22,10 +22,53 @@ import { z } from "zod";
 // tests/unit/zodHelpers.test.ts.
 // ---------------------------------------------------------------------------
 
+// "" (a blank form input) and null (an unset column round-tripped from the API)
+// both mean "no value": they validate, and resolve to null so that on a PATCH
+// they CLEAR the stored value. They used to resolve to undefined, which on a
+// PATCH meant "leave untouched" — so removing a logo/cover/canonical URL in the
+// admin returned 200 but silently kept the old value (found by live test).
+// Omitting the key entirely (undefined) still means "leave untouched".
 export function optionalUrl() {
-  return z.preprocess((value) => (value === "" ? undefined : value), z.string().url().optional());
+  return z.preprocess(
+    (value) => (value === "" || (typeof value === "string" && value.trim() === "") ? null : value),
+    z.string().url().nullable().optional(),
+  );
 }
 
 export function optionalEmail() {
-  return z.preprocess((value) => (value === "" ? undefined : value), z.string().email().optional());
+  return z.preprocess(
+    (value) => (value === "" || (typeof value === "string" && value.trim() === "") ? null : value),
+    z.string().email().nullable().optional(),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Blank-input helpers for optional date / id / integer fields.
+//
+// Same class of bug as optionalUrl()/optionalEmail() above, found by
+// replaying the admin forms' real payloads against a live database:
+//   • <input type="date"> left blank sends "" → z.coerce.date() turns that
+//     into an Invalid Date → 400 "Invalid date" (ArticleForm's four date
+//     fields, IssueForm's publicationDate).
+//   • A "— none —" <select> sends "" for volumeId/issueId → Prisma FK
+//     violation → 500 (and `null`, the only way to clear a relation, was
+//     rejected by z.string().optional()).
+//   • VolumeForm sends `year: null` when blank → z.coerce.number() turns null
+//     into 0 → a volume silently stored as year 0.
+// Treat "" as "clear this field" (null), and let an explicit null through.
+// Omitted (undefined) still means "leave untouched" on PATCH.
+// ---------------------------------------------------------------------------
+
+const blankToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
+export function optionalDate() {
+  return z.preprocess(blankToNull, z.coerce.date().nullable().optional());
+}
+
+export function optionalId() {
+  return z.preprocess(blankToNull, z.string().min(1).nullable().optional());
+}
+
+export function optionalInt() {
+  return z.preprocess(blankToNull, z.coerce.number().int().nullable().optional());
 }

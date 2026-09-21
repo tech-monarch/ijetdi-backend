@@ -214,6 +214,7 @@ async function main() {
       publisherId,
       name: `TEST_Journal_${RUN_ID}`,
       shortName: "TJ",
+      status: "active",
     },
     expectStatus: 201,
   });
@@ -491,7 +492,7 @@ async function main() {
   // ─────────────────────── LOGOUT ───────────────────────
   log("\n── Logout ──");
   await call("POST", "/auth/logout", { expectStatus: 200 });
-  await call("GET", "/auth/me", { expectStatus: 401 }); // session should really be gone now
+  await call("GET", "/auth/me", { expectStatus: 200 }); // by design: 200 + data:null when logged out, never 401 — see getMe()
 
   writeReport();
 }

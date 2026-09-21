@@ -35,7 +35,10 @@ export async function getEditorByIdAdmin(id: string) {
 }
 
 export async function getEditorBySlug(slug: string) {
-  const editor = await prisma.editor.findUnique({ where: { slug } });
+  // Public endpoint: an inactive editor is hidden from the public editorial
+  // board (getEditorsByPublicationId), so it must not stay reachable by slug
+  // either. Admins read inactive editors via GET /api/admin/editors/:id.
+  const editor = await prisma.editor.findFirst({ where: { slug, status: "active" } });
   if (!editor) throw notFound("EDITOR_NOT_FOUND", `Not found: ${slug}`);
   return editor;
 }

@@ -275,6 +275,10 @@ model Article {
   pdfUrl             String?       @map("pdf_url")
   supplementaryFiles String[]      @map("supplementary_files")
   references         String[]
+  // Author-supplied keywords (public article page, JSON-LD, admin form). Added
+  // after the frontend audit found the frontend reading/writing `keywords`
+  // that no column ever backed. Indexed in search_vector (weight B).
+  keywords           String[]
   license            String?
   status             ArticleStatus
   area               String?

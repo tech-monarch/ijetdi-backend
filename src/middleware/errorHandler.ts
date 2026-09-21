@@ -68,6 +68,17 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
       res.status(404).json({ success: false, error: { code: "NOT_FOUND", message: "Record not found." } });
       return;
     }
+    // Foreign-key violation: the request referenced a record that doesn't
+    // exist (an unknown publicationId/volumeId/authorId/...). Was unmapped, so
+    // it surfaced as a 500 INTERNAL_ERROR — with, in development, Prisma's
+    // internal invocation text in the message — for what is a client error.
+    if (err.code === "P2003") {
+      res.status(400).json({
+        success: false,
+        error: { code: "INVALID_REFERENCE", message: "A referenced record does not exist." },
+      });
+      return;
+    }
     if (err.code === "P2002") {
       res.status(409).json({
         success: false,

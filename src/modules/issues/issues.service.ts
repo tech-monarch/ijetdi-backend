@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { badRequest, notFound } from "../../lib/envelope.js";
 import type { issueCreateSchema, issueUpdateSchema } from "./issues.schemas.js";
@@ -50,9 +51,26 @@ export async function getIssueById(id: string) {
  * behavior exactly — setting a new current issue silently demotes
  * whichever one previously held that status) AND a partial unique index
  * added by hand in the migration SQL as a hard backstop against races.
+ *
+ * Two requirements this helper must satisfy, both found by calling the real
+ * endpoints against a real database (both createIssue and updateIssue
+ * returned 409 DUPLICATE whenever another issue was already current — i.e.
+ * every time an editor tried to publish a new "current issue"):
+ *  1. It takes the transaction client and runs through it. It used to write
+ *     via the global `prisma`, i.e. a different connection, so the demotion
+ *     committed independently of the surrounding transaction (not atomic —
+ *     a later failure would roll back the issue write but leave the old
+ *     current issue already demoted).
+ *  2. It must run BEFORE the row that becomes `current` is written. The
+ *     unique index is not deferrable, so writing the new current row first
+ *     violates it immediately, before any demotion could run.
  */
-async function demoteOtherCurrentIssues(publicationId: string, excludeIssueId?: string) {
-  await prisma.issue.updateMany({
+async function demoteOtherCurrentIssues(
+  db: Prisma.TransactionClient,
+  publicationId: string,
+  excludeIssueId?: string,
+) {
+  await db.issue.updateMany({
     where: {
       publicationId,
       status: "current",
@@ -77,14 +95,10 @@ export async function createIssue(data: z.infer<typeof issueCreateSchema>) {
   await assertVolumePublicationConsistency(data.volumeId, data.publicationId);
 
   return prisma.$transaction(async (tx) => {
-    const issue = await tx.issue.create({ data });
-    if (issue.status === "current") {
-      await tx.issue.updateMany({
-        where: { publicationId: issue.publicationId, status: "current", id: { not: issue.id } },
-        data: { status: "published" },
-      });
+    if (data.status === "current") {
+      await demoteOtherCurrentIssues(tx, data.publicationId);
     }
-    return issue;
+    return tx.issue.create({ data });
   });
 }
 
@@ -99,10 +113,11 @@ export async function updateIssue(id: string, data: z.infer<typeof issueUpdateSc
   }
 
   return prisma.$transaction(async (tx) => {
-    const updated = await tx.issue.update({ where: { id }, data });
-    if (data.status === "current") {
-      await demoteOtherCurrentIssues(updated.publicationId, updated.id);
+    // Demote first (see demoteOtherCurrentIssues). Also covers moving an
+    // already-current issue to a different publication that has its own current one.
+    if ((data.status ?? existing.status) === "current") {
+      await demoteOtherCurrentIssues(tx, nextPublicationId, id);
     }
-    return updated;
+    return tx.issue.update({ where: { id }, data });
   });
 }

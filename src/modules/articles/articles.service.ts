@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db.js";
-import { badRequest, buildPagination, notFound } from "../../lib/envelope.js";
+import { badRequest, buildPagination, forbidden, notFound } from "../../lib/envelope.js";
 import { isValidTransition, type ArticleStatusValue } from "../../lib/editorialWorkflow.js";
 import { sanitizeRichTextContent } from "../../lib/sanitizeContent.js";
+import { omitAuthorEmail } from "../../lib/publicAuthor.js";
 import { deleteArticleChunks, ingestArticle } from "../research-assistant/ingestion.service.js";
 import type { z } from "zod";
 import type {
@@ -28,11 +29,11 @@ const authorInclude = {
 type ArticleWithRelations = Prisma.ArticleGetPayload<{ include: typeof authorInclude }>;
 
 /** Public/enriched shape: resolved authors[]/editors[] (full objects) + volumeNumber/issueNumber. */
-function enrich(article: ArticleWithRelations) {
+function enrich(article: ArticleWithRelations, opts: { publicView?: boolean } = {}) {
   const { authors, volume, issue, ...rest } = article;
   return {
     ...rest,
-    authors: authors.map((a) => a.author),
+    authors: authors.map((a) => (opts.publicView ? omitAuthorEmail(a.author) : a.author)),
     volumeNumber: volume?.number ?? null,
     issueNumber: issue?.number ?? null,
   };
@@ -62,7 +63,7 @@ export async function listPublished(query: z.infer<typeof articlePublicListQuery
       prisma.article.count({ where }),
     ]);
     return {
-      data: rows.map(enrich),
+      data: rows.map((r) => enrich(r, { publicView: true })),
       pagination: buildPagination(query.page, query.limit, total),
     };
   }
@@ -74,7 +75,7 @@ export async function listPublished(query: z.infer<typeof articlePublicListQuery
     include: authorInclude,
     orderBy: { publishedDate: "desc" },
   });
-  return { data: rows.map(enrich), pagination: null };
+  return { data: rows.map((r) => enrich(r, { publicView: true })), pagination: null };
 }
 
 export async function getPublishedBySlug(slug: string) {
@@ -87,7 +88,7 @@ export async function getPublishedBySlug(slug: string) {
   if (!article || article.status !== "published") {
     throw notFound("ARTICLE_NOT_FOUND", `Not found: ${slug}`);
   }
-  return enrich(article);
+  return enrich(article, { publicView: true });
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────
@@ -131,12 +132,22 @@ export async function listAdmin(query: z.infer<typeof articleAdminListQuerySchem
     prisma.article.count({ where }),
   ]);
 
-  return { data: rows.map(enrich), pagination: buildPagination(query.page, query.limit, total) };
+  return { data: rows.map((r) => enrich(r)), pagination: buildPagination(query.page, query.limit, total) };
 }
 
-/** Raw admin shape: author IDs (ordered) + editor IDs (unordered) — not resolved objects — what ArticleForm's pickers need. */
-export async function getAdminById(id: string) {
-  const article = await prisma.article.findUnique({
+/**
+ * Raw admin shape: author IDs (ordered) + editor IDs (unordered) — not resolved objects — what ArticleForm's pickers need.
+ *
+ * `db` MUST be the transaction client when this is called from inside a
+ * $transaction callback (createArticle/updateArticle below). Reading through
+ * the global client from inside an interactive transaction uses a different
+ * connection, which cannot see the transaction's own uncommitted rows: on
+ * create it 404'd with ARTICLE_NOT_FOUND for the very article just inserted
+ * (rolling the whole create back — which also broke POST /api/submissions),
+ * and on update it returned the pre-update authors/editors.
+ */
+export async function getAdminById(id: string, db: Prisma.TransactionClient | typeof prisma = prisma) {
+  const article = await db.article.findUnique({
     where: { id },
     include: {
       authors: { orderBy: { position: "asc" }, select: { authorId: true } },
@@ -186,13 +197,43 @@ export async function createArticle(data: z.infer<typeof articleCreateSchema>) {
         data: authorIds.map((authorId, position) => ({ articleId: article.id, authorId, position })),
       });
     }
-    return getAdminById(article.id);
+    return getAdminById(article.id, tx);
   });
 }
 
-export async function updateArticle(id: string, data: z.infer<typeof articleUpdateSchema>) {
+export async function updateArticle(
+  id: string,
+  input: z.infer<typeof articleUpdateSchema>,
+  opts: { canPublish: boolean },
+) {
   const existing = await prisma.article.findUnique({ where: { id } });
   if (!existing) throw notFound("ARTICLE_NOT_FOUND", `Not found: ${id}`);
+
+  // `status` is part of the general update schema (ArticleForm sends the
+  // whole form, status included), but it must not be a back door around the
+  // dedicated PATCH .../status endpoint: that endpoint alone enforced the
+  // docs/EDITORIAL_WORKFLOW.md transition table, the articles.publish
+  // permission, the server-set publishedDate, and the research-assistant
+  // ingest/delete hooks. So a status that actually CHANGES is validated here
+  // exactly as there (before anything is written), then applied through
+  // updateStatus() below; an unchanged status (the common case — the form
+  // re-sends whatever it loaded) is simply ignored.
+  const { status: requestedStatus, ...data } = input;
+  const statusChange =
+    requestedStatus !== undefined && requestedStatus !== (existing.status as ArticleStatusValue)
+      ? requestedStatus
+      : null;
+  if (statusChange) {
+    if (!opts.canPublish) {
+      throw forbidden("Changing an article's status requires the articles.publish permission.");
+    }
+    if (!isValidTransition(existing.status as ArticleStatusValue, statusChange)) {
+      throw badRequest(
+        "INVALID_STATUS_TRANSITION",
+        `Cannot transition an article from "${existing.status}" to "${statusChange}".`,
+      );
+    }
+  }
 
   const sanitized = sanitizeContentField(data);
   const { authorIds, articleData: withoutAuthors } = splitAuthorIds(sanitized);
@@ -219,7 +260,7 @@ export async function updateArticle(id: string, data: z.infer<typeof articleUpda
         });
       }
     }
-    return getAdminById(id);
+    return getAdminById(id, tx);
   });
 
   // Re-ingestion hook: an edit to a title/abstract/content field on an
@@ -233,6 +274,14 @@ export async function updateArticle(id: string, data: z.infer<typeof articleUpda
     (articleData.title !== undefined && articleData.title !== existing.title) ||
     (articleData.abstract !== undefined && articleData.abstract !== existing.abstract) ||
     (articleData.content !== undefined && articleData.content !== existing.content);
+
+  if (statusChange) {
+    // Applies the transition plus its side effects (publishedDate, ingest /
+    // delete chunks). Re-reads afterwards so the response reflects both the
+    // field edits and the new status.
+    await updateStatus(id, statusChange);
+    return getAdminById(id);
+  }
 
   if (existing.status === "published" && contentFieldsChanged) {
     ingestArticle(id).catch((err) => {

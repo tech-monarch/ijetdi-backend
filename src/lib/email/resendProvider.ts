@@ -2,7 +2,11 @@ import { Resend } from "resend";
 import { env } from "../../config/env.js";
 import type { EmailProvider, EmailTemplate } from "./sendEmail.js";
 
-const resend = new Resend(env.RESEND_API_KEY);
+// `new Resend("")` throws at construction ("Missing API key"), which crashed the
+// whole process at import time whenever RESEND_API_KEY was unset — making the
+// dev-mode "log instead of sending" fallback in send() below unreachable. The
+// placeholder is never used to send: send() returns early when the real key is empty.
+const resend = new Resend(env.RESEND_API_KEY || "re_placeholder_unset");
 
 function renderTemplate(template: EmailTemplate, data: Record<string, unknown>): { subject: string; html: string } {
   switch (template) {

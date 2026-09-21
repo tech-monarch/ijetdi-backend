@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { optionalInt } from "../../lib/zodHelpers.js";
 
 export const volumeCreateSchema = z.object({
   publicationId: z.string().min(1),
   number: z.coerce.number().int(),
-  year: z.coerce.number().int().optional(),
+  year: optionalInt(),
   description: z.string().optional(),
   status: z.enum(["active", "archived"]),
 });
