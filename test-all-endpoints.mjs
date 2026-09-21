@@ -337,8 +337,10 @@ async function main() {
   for (const status of transitions) {
     await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status } });
   }
-  await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status: "draft" } }); // published -> draft is valid (unpublish)
-  await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status: "published" } }); // republish so the public-page test below works
+  await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status: "draft" } }); // published -> draft (unpublish)
+  for (const status of transitions) {  // draft can only go to "submitted", so republish via the legal path
+    await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status } });
+}
   await call("PATCH", `/admin/articles/${articleId}/status`, { body: { status: "under_review" }, expectStatus: 400 }); // published -> under_review is NOT a valid transition
 
   // now it's really published — confirm it really shows up publicly
