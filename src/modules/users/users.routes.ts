@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ok } from "../../lib/envelope.js";
 import { requirePermission } from "../../middleware/requireAuth.js";
 import { validateBody } from "../../middleware/validate.js";
-import { userCreateSchema, userUpdateSchema } from "./users.schemas.js";
+import { userCreateSchema, userSetPasswordSchema, userUpdateSchema } from "./users.schemas.js";
 import * as usersService from "./users.service.js";
 
 // Mounted only under /api/admin. Every route here is gated by
@@ -28,8 +28,8 @@ usersAdminRouter.get("/users/:id", requirePermission("users.manage"), async (req
   }
 });
 
-// POST /api/admin/users — see users.service.ts's createUser for why this
-// never accepts a password directly.
+// POST /api/admin/users — accepts an optional password (see
+// users.schemas.ts / users.service.ts's createUser).
 usersAdminRouter.post(
   "/users",
   requirePermission("users.manage"),
@@ -51,6 +51,21 @@ usersAdminRouter.patch(
   async (req, res, next) => {
     try {
       ok(res, await usersService.updateUser(req.params.id, req.body));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// PATCH /api/admin/users/:id/password — an admin setting or resetting this
+// user's password at will (see users.service.ts's setUserPassword).
+usersAdminRouter.patch(
+  "/users/:id/password",
+  requirePermission("users.manage"),
+  validateBody(userSetPasswordSchema),
+  async (req, res, next) => {
+    try {
+      ok(res, await usersService.setUserPassword(req.params.id, req.body));
     } catch (err) {
       next(err);
     }

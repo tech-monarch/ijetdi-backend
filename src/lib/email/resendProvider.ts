@@ -88,12 +88,34 @@ function renderTemplate(template: EmailTemplate, data: Record<string, unknown>):
     case "user-account-created": {
       const name = String(data.name ?? "");
       const setPasswordUrl = String(data.setPasswordUrl ?? "");
+      const hasTemporaryPassword = Boolean(data.hasTemporaryPassword);
       return {
         subject: "Your account has been created",
-        html: `
+        html: hasTemporaryPassword
+          ? `
+          <p>Hi ${name},</p>
+          <p>An account has been created for you. An administrator has your temporary
+          password — ask them for it, or <a href="${setPasswordUrl}">set your own
+          password</a> instead. That link expires in 1 hour.</p>
+        `
+          : `
           <p>Hi ${name},</p>
           <p>An account has been created for you. <a href="${setPasswordUrl}">Set your
           password</a> to log in. This link expires in 1 hour.</p>
+        `,
+      };
+    }
+    case "admin-password-changed": {
+      const name = String(data.name ?? "");
+      const setPasswordUrl = String(data.setPasswordUrl ?? "");
+      return {
+        subject: "Your account password was changed",
+        html: `
+          <p>Hi ${name},</p>
+          <p>An administrator changed the password on your account. If you expected
+          this, you're all set. If you didn't, or you'd rather choose your own
+          password, <a href="${setPasswordUrl}">set a new one here</a> — this link
+          expires in 1 hour.</p>
         `,
       };
     }

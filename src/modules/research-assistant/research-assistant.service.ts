@@ -1,3 +1,4 @@
+import { env } from "../../config/env.js";
 import { prisma } from "../../config/db.js";
 import { badRequest } from "../../lib/envelope.js";
 import { embedText, generateAnswer, type GeminiChatTurn } from "../../lib/gemini.js";
@@ -25,6 +26,87 @@ export interface QueryResult {
 }
 
 const CANNED_EMPTY_ANSWER = "I don't have information about that in our publications.";
+
+// ---------------------------------------------------------------------------
+// Conversational intent detection.
+//
+// Before this, EVERY message — including "hello" — ran the full pipeline:
+// embed it, search the vector index, and (whenever nothing matched closely
+// enough) fire an actual Tavily web search for the literal text "hello".
+// Wasteful, slow, and it produced nonsense "external sources" for plain
+// chit-chat. Reported directly: "I can't be saying hello and it's making
+// research on hello for me."
+//
+// Two layers, cheapest first, so the common case costs nothing extra:
+//  1. A zero-cost heuristic that catches the overwhelming majority of
+//     greetings/thanks/farewells/meta questions about the assistant itself.
+//     Answered with a canned reply, no API call at all — this works even if
+//     Gemini is misconfigured or down, which the strict research path does not.
+//  2. For anything longer or ambiguous, ONE small classification call to
+//     Gemini (not the real, expensive retrieval pipeline) decides whether
+//     this needs research or just a friendly reply.
+// If classification itself fails for any reason (including "Gemini isn't
+// configured"), this fails OPEN to "research" — the only behavior that
+// existed before — rather than silently declining to answer a real question.
+// ---------------------------------------------------------------------------
+
+const SMALLTALK_PATTERNS: RegExp[] = [
+  /^(hi|hello|hey|yo|hiya|howdy)[.!, ]*$/,
+  /^(hi|hello|hey),? there[.!, ]*$/,
+  /^good (morning|afternoon|evening|day)[.!, ]*$/,
+  /^(how'?s it going|how are you( doing)?|what'?s up|sup)[?.! ]*$/,
+  /^(thanks|thank you|thx|ty|cheers)( so much| a lot)?[.!, ]*$/,
+  /^(ok|okay|cool|got it|sounds good|great|nice one|alright)[.!, ]*$/,
+  /^(bye|goodbye|see ya|see you|later|take care)[.!, ]*$/,
+  /^(who are you|what are you|what can you do|what do you do|how do you work|help)[?.! ]*$/,
+  /^(test|testing|123)[.!, ]*$/,
+];
+
+const SMALLTALK_REPLY =
+  "Hi! I'm the research assistant for this journal — ask me about a topic, author, or finding " +
+  "from our published articles and I'll look it up for you.";
+
+/** Cheap, deterministic first pass — no network call. */
+function isHeuristicSmallTalk(question: string): boolean {
+  const q = question.trim().toLowerCase();
+  if (!q || q.split(/\s+/).length > 6) return false; // never applies to longer messages
+  return SMALLTALK_PATTERNS.some((re) => re.test(q));
+}
+
+/** Slower fallback for anything the heuristic didn't already resolve. */
+async function classifyIntent(question: string): Promise<"research" | "chat"> {
+  if (!env.GEMINI_API_KEY) return "research"; // can't classify without Gemini; same as before this feature existed
+  try {
+    const prompt = [
+      'Classify the message below as exactly one word: "research" or "chat".',
+      '"research" = a real question seeking information, findings, or a search of published academic articles.',
+      '"chat" = a greeting, thanks, farewell, small talk, or a question about the assistant itself.',
+      "Reply with ONLY that one word, nothing else.",
+      `Message: "${question}"`,
+    ].join("\n");
+    const result = await generateAnswer("You are a strict, terse classifier.", [{ role: "user", text: prompt }]);
+    return result.trim().toLowerCase().startsWith("chat") ? "chat" : "research";
+  } catch {
+    return "research"; // fail open — never silently drop a real question over a classifier hiccup
+  }
+}
+
+/** Friendly, unconstrained reply for the "chat" branch — no sources, no citation rules. */
+async function generateConversationalReply(question: string, conversationId: string): Promise<string> {
+  try {
+    const history = await loadConversationHistory(conversationId);
+    const systemPrompt = [
+      "You are the friendly AI Research Assistant for an academic journal platform.",
+      "This message is casual conversation, not a research question — respond naturally and briefly.",
+      "No citations, no source list. You may briefly mention you can look up published articles if that's relevant, but keep it short and warm.",
+    ].join(" ");
+    // history's last entry is this same message in its bare form (persisted
+    // before this ran) — drop it, the raw question below stands in for it.
+    return await generateAnswer(systemPrompt, [...history.slice(0, -1), { role: "user", text: question }]);
+  } catch {
+    return SMALLTALK_REPLY;
+  }
+}
 // How many prior turns (user+assistant pairs) to pass back to Gemini for
 // multi-turn context — small on purpose: this isn't a general chat
 // assistant, and a long history dilutes the "answer only from the
@@ -101,6 +183,15 @@ export async function handleQuery(
   await prisma.aiMessage.create({
     data: { conversationId, role: "user", content: question, citedChunkIds: [] },
   });
+
+  const heuristicChat = isHeuristicSmallTalk(question);
+  if (heuristicChat || (await classifyIntent(question)) === "chat") {
+    const answer = heuristicChat ? SMALLTALK_REPLY : await generateConversationalReply(question, conversationId);
+    await prisma.aiMessage.create({
+      data: { conversationId, role: "assistant", content: answer, citedChunkIds: [] },
+    });
+    return { answer, journalSources: [], externalSources: [], emptyResults: true, conversationId };
+  }
 
   // 1. Embed the question with the SAME model used at ingestion.
   const queryEmbedding = await embedText(question);

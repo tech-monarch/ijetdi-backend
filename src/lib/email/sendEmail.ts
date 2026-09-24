@@ -11,7 +11,8 @@ export type EmailTemplate =
   | "submission-notify-editors"
   | "review-assigned"
   | "review-submitted"
-  | "user-account-created";
+  | "user-account-created"
+  | "admin-password-changed";
 
 export interface EmailProvider {
   send(params: { to: string; template: EmailTemplate; data: Record<string, unknown> }): Promise<void>;

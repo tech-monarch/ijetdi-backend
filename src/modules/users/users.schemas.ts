@@ -10,19 +10,32 @@ const userRoleEnum = z.enum([
   "reviewer",
 ]);
 
-// No `password` field here, deliberately — see users.service.ts's
-// createUser: new accounts get a real, single-use "set your password"
-// link via the same token mechanism as forgot-password, never a
-// plaintext initial password chosen by the admin and emailed around.
+// `password` is optional: an admin may set a specific initial password, or
+// leave it out and have the server generate one (returned once, in the
+// create response only — see users.service.ts's createUser). Either way a
+// real "set your own password" link is ALSO always emailed, through the
+// same single-use token mechanism forgot-password uses, so the user is
+// never stuck with a password only the admin knows.
 export const userCreateSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   role: userRoleEnum,
+  password: z.string().min(10, "Password must be at least 10 characters").optional(),
   // Only meaningful when role === "reviewer" — links this login to an
   // existing Reviewer profile so "My Reviews" resolves to the right
   // reviewerId. Validated against a real Reviewer record server-side in
   // the service, not trusted here.
   reviewerId: z.string().optional(),
+});
+
+// PATCH /api/admin/users/:id/password — an admin setting or resetting a
+// specific user's password at will. `password` optional, same rule as
+// create: omit it to have the server generate one (returned once).
+// `notify` (default true) controls whether the user is emailed about the
+// change, with a link to set their own password instead.
+export const userSetPasswordSchema = z.object({
+  password: z.string().min(10, "Password must be at least 10 characters").optional(),
+  notify: z.boolean().optional(),
 });
 
 // role is intentionally excludable from a partial update the same as

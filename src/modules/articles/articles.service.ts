@@ -185,7 +185,17 @@ export async function createArticle(data: z.infer<typeof articleCreateSchema>) {
   const { authorIds, articleData: withoutAuthors } = splitAuthorIds(sanitized);
   const { editorIds, articleData } = splitEditorIds(withoutAuthors);
 
-  return prisma.$transaction(async (tx) => {
+  // timeout/maxWait: Prisma's interactive-transaction defaults (5s timeout, 2s maxWait
+  // to acquire a connection) are tuned for a local database. Against a remote host
+  // (Aiven) the round trip for create + link rows + read-back can occasionally exceed
+  // that, and the failure mode is a confusing one: not a query error, but
+  // "Transaction API error: Transaction not found ... obtained before disconnecting" —
+  // Prisma closed the transaction on the server side before the callback finished.
+  // This showed up live during the integration audit (worked once, failed once, same
+  // code, same request), which is the signature of a timeout/latency issue rather than
+  // a logic bug. Widened here rather than left at the default.
+  return prisma.$transaction(
+    async (tx) => {
     const article = await tx.article.create({
       data: {
         ...articleData,
@@ -198,7 +208,9 @@ export async function createArticle(data: z.infer<typeof articleCreateSchema>) {
       });
     }
     return getAdminById(article.id, tx);
-  });
+    },
+    { timeout: 15000, maxWait: 10000 },
+  );
 }
 
 export async function updateArticle(
@@ -239,7 +251,8 @@ export async function updateArticle(
   const { authorIds, articleData: withoutAuthors } = splitAuthorIds(sanitized);
   const { editorIds, articleData } = splitEditorIds(withoutAuthors);
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(
+    async (tx) => {
     await tx.article.update({
       where: { id },
       data: {
@@ -261,7 +274,9 @@ export async function updateArticle(
       }
     }
     return getAdminById(id, tx);
-  });
+    },
+    { timeout: 15000, maxWait: 10000 },
+  );
 
   // Re-ingestion hook: an edit to a title/abstract/content field on an
   // ALREADY-published article must not leave stale embeddings from the

@@ -94,12 +94,18 @@ async function assertVolumePublicationConsistency(volumeId: string, publicationI
 export async function createIssue(data: z.infer<typeof issueCreateSchema>) {
   await assertVolumePublicationConsistency(data.volumeId, data.publicationId);
 
-  return prisma.$transaction(async (tx) => {
-    if (data.status === "current") {
-      await demoteOtherCurrentIssues(tx, data.publicationId);
-    }
-    return tx.issue.create({ data });
-  });
+  // See the matching comment in articles.service.ts's createArticle: widened
+  // past Prisma's 5s/2s interactive-transaction defaults for the same reason
+  // (a remote database, not the local one this was first tested against).
+  return prisma.$transaction(
+    async (tx) => {
+      if (data.status === "current") {
+        await demoteOtherCurrentIssues(tx, data.publicationId);
+      }
+      return tx.issue.create({ data });
+    },
+    { timeout: 15000, maxWait: 10000 },
+  );
 }
 
 export async function updateIssue(id: string, data: z.infer<typeof issueUpdateSchema>) {
@@ -112,12 +118,15 @@ export async function updateIssue(id: string, data: z.infer<typeof issueUpdateSc
     await assertVolumePublicationConsistency(nextVolumeId, nextPublicationId);
   }
 
-  return prisma.$transaction(async (tx) => {
-    // Demote first (see demoteOtherCurrentIssues). Also covers moving an
-    // already-current issue to a different publication that has its own current one.
-    if ((data.status ?? existing.status) === "current") {
-      await demoteOtherCurrentIssues(tx, nextPublicationId, id);
-    }
-    return tx.issue.update({ where: { id }, data });
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      // Demote first (see demoteOtherCurrentIssues). Also covers moving an
+      // already-current issue to a different publication that has its own current one.
+      if ((data.status ?? existing.status) === "current") {
+        await demoteOtherCurrentIssues(tx, nextPublicationId, id);
+      }
+      return tx.issue.update({ where: { id }, data });
+    },
+    { timeout: 15000, maxWait: 10000 },
+  );
 }
