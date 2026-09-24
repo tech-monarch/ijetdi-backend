@@ -1,16 +1,18 @@
 import { prisma } from "../../config/db.js";
+import { omitAuthorEmail } from "../../lib/publicAuthor.js";
 import { notFound } from "../../lib/envelope.js";
 import type { authorCreateSchema, authorUpdateSchema } from "./authors.schemas.js";
 import type { z } from "zod";
 
-export function listAuthors() {
-  return prisma.author.findMany({ orderBy: { lastName: "asc" } });
+export async function listAuthors() {
+  const authors = await prisma.author.findMany({ orderBy: { lastName: "asc" } });
+  return authors.map(omitAuthorEmail);
 }
 
 export async function getAuthorBySlug(slug: string) {
   const author = await prisma.author.findUnique({ where: { slug } });
   if (!author) throw notFound("AUTHOR_NOT_FOUND", `Not found: ${slug}`);
-  return author;
+  return omitAuthorEmail(author);
 }
 
 async function resolveAuthorId(idOrSlug: string): Promise<string> {
@@ -37,7 +39,7 @@ export async function getPublishedArticlesByAuthor(idOrSlug: string) {
     const { authors, volume, issue, ...rest } = article;
     return {
       ...rest,
-      authors: authors.map((a) => a.author),
+      authors: authors.map((a) => omitAuthorEmail(a.author)),
       volumeNumber: volume?.number ?? null,
       issueNumber: issue?.number ?? null,
     };

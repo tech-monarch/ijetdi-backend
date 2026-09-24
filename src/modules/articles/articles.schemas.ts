@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { optionalUrl } from "../../lib/zodHelpers.js";
+import { optionalDate, optionalId, optionalUrl } from "../../lib/zodHelpers.js";
 import { ARTICLE_STATUSES } from "../../lib/editorialWorkflow.js";
 
 const articleStatusEnum = z.enum(ARTICLE_STATUSES);
@@ -10,19 +10,20 @@ export const articleCreateSchema = z.object({
   abstract: z.string().min(1),
   content: z.string().optional(),
   publicationId: z.string().min(1),
-  volumeId: z.string().optional(),
-  issueId: z.string().optional(),
+  volumeId: optionalId(),
+  issueId: optionalId(),
   pages: z.string().optional(),
   doi: z.string().optional(),
   manuscriptId: z.string().optional(),
   articleType: z.string().min(1),
-  receivedDate: z.coerce.date().optional(),
-  revisedDate: z.coerce.date().optional(),
-  acceptedDate: z.coerce.date().optional(),
-  publishedDate: z.coerce.date().optional(),
+  receivedDate: optionalDate(),
+  revisedDate: optionalDate(),
+  acceptedDate: optionalDate(),
+  publishedDate: optionalDate(),
   pdfUrl: optionalUrl(),
   supplementaryFiles: z.array(z.string().url()).default([]),
   references: z.array(z.string()).default([]),
+  keywords: z.array(z.string().trim().min(1)).default([]),
   license: z.string().optional(),
   status: articleStatusEnum,
   area: z.string().optional(),
@@ -54,8 +55,8 @@ export const articlePublicListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),
   publicationId: z.string().optional(),
-  issueId: z.string().optional(),
-  volumeId: z.string().optional(),
+  issueId: optionalId(),
+  volumeId: optionalId(),
   area: z.string().optional(),
 });
 

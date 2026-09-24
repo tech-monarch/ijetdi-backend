@@ -1,24 +1,18 @@
-# Endpoint Test Report — run 2026-09-20T19-17-46-305Z
+# Endpoint Test Report — run 2026-09-21T05-34-59-088Z
 
 Base URL: `http://localhost:4000/api`
 
-**91/104 calls passed.**
+**97/104 calls passed.**
 
 ## Failures
 
-- `POST /admin/publications` → 400 Expected 201
-- `POST /admin/volumes` → 400 Expected 201
-- `POST /admin/issues` → 400 Expected 201
-- `POST /admin/editors` → 400 Expected 201
-- `POST /admin/articles` → 400 Expected 201
+- `POST /admin/articles` → 404 Expected 201
 - `PATCH /admin/articles/undefined/status` → 404 Expected 400
-- `GET /articles/test-article-2026-09-20T19-17-46-305Z` → 404 Expected 200
+- `GET /articles/test-article-2026-09-21T05-34-59-088Z` → 404 Expected 200
 - `POST /admin/reviews` → 400 Expected 201
 - `POST /admin/reviews` → 400 Expected 409
-- `POST /admin/indexing` → 400 Expected 201
-- `POST /submissions` → 400 Expected 201
+- `POST /submissions` → 404 Expected 201
 - `POST /research-assistant/query` → 503 
-- `GET /auth/me` → 200 Expected 401
 
 ## Full log
 
@@ -223,8 +217,8 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-  "name": "TEST_Publisher_2026-09-20T19-17-46-305Z",
+  "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+  "name": "TEST_Publisher_2026-09-21T05-34-59-088Z",
   "status": "active"
 }
 ```
@@ -234,9 +228,9 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
-    "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-    "name": "TEST_Publisher_2026-09-20T19-17-46-305Z",
+    "id": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+    "name": "TEST_Publisher_2026-09-21T05-34-59-088Z",
     "description": null,
     "logo": null,
     "address": null,
@@ -247,8 +241,8 @@ Base URL: `http://localhost:4000/api`
     "status": "active",
     "seoTitle": null,
     "seoDescription": null,
-    "createdAt": "2026-09-20T19:17:56.395Z",
-    "updatedAt": "2026-09-20T19:17:56.395Z"
+    "createdAt": "2026-09-21T05:35:07.830Z",
+    "updatedAt": "2026-09-21T05:35:07.830Z"
   }
 }
 ```
@@ -284,9 +278,26 @@ Base URL: `http://localhost:4000/api`
       "updatedAt": "2026-09-05T10:38:03.729Z"
     },
     {
+      "id": "7f450c28-996b-44df-90b9-fbf57c01b828",
+      "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+      "name": "TEST_Publisher_2026-09-21T05-34-59-088Z",
+      "description": null,
+      "logo": null,
+      "address": null,
+      "country": null,
+      "website": null,
+      "email": null,
+      "phone": null,
+      "status": "active",
+      "seoTitle": null,
+      "seoDescription": null,
+      "createdAt": "2026-09-21T05:35:07.830Z",
+      "updatedAt": "2026-09-21T05:35:07.830Z"
+    },
+    {
       "id": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
       "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-      "name": "TEST_Publisher_2026-09-20T19-17-46-305Z",
+      "name": "TEST_Publisher_Updated_2026-09-20T19-17-46-305Z",
       "description": null,
       "logo": null,
       "address": null,
@@ -298,13 +309,13 @@ Base URL: `http://localhost:4000/api`
       "seoTitle": null,
       "seoDescription": null,
       "createdAt": "2026-09-20T19:17:56.395Z",
-      "updatedAt": "2026-09-20T19:17:56.395Z"
+      "updatedAt": "2026-09-20T19:18:11.062Z"
     }
   ]
 }
 ```
 
-### GET /publishers/test-publisher-2026-09-20T19-17-46-305Z
+### GET /publishers/test-publisher-2026-09-21T05-34-59-088Z
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -317,9 +328,9 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
-    "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-    "name": "TEST_Publisher_2026-09-20T19-17-46-305Z",
+    "id": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+    "name": "TEST_Publisher_2026-09-21T05-34-59-088Z",
     "description": null,
     "logo": null,
     "address": null,
@@ -330,13 +341,13 @@ Base URL: `http://localhost:4000/api`
     "status": "active",
     "seoTitle": null,
     "seoDescription": null,
-    "createdAt": "2026-09-20T19:17:56.395Z",
-    "updatedAt": "2026-09-20T19:17:56.395Z"
+    "createdAt": "2026-09-21T05:35:07.830Z",
+    "updatedAt": "2026-09-21T05:35:07.830Z"
   }
 }
 ```
 
-### GET /publishers/d9a829e1-3eab-4e80-83d6-87dea4356f9b/publications
+### GET /publishers/7f450c28-996b-44df-90b9-fbf57c01b828/publications
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -352,7 +363,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /admin/publishers/d9a829e1-3eab-4e80-83d6-87dea4356f9b
+### GET /admin/publishers/7f450c28-996b-44df-90b9-fbf57c01b828
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -365,9 +376,9 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
-    "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-    "name": "TEST_Publisher_2026-09-20T19-17-46-305Z",
+    "id": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+    "name": "TEST_Publisher_2026-09-21T05-34-59-088Z",
     "description": null,
     "logo": null,
     "address": null,
@@ -378,8 +389,8 @@ Base URL: `http://localhost:4000/api`
     "status": "active",
     "seoTitle": null,
     "seoDescription": null,
-    "createdAt": "2026-09-20T19:17:56.395Z",
-    "updatedAt": "2026-09-20T19:17:56.395Z"
+    "createdAt": "2026-09-21T05:35:07.830Z",
+    "updatedAt": "2026-09-21T05:35:07.830Z"
   }
 }
 ```
@@ -403,13 +414,13 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### PATCH /admin/publishers/d9a829e1-3eab-4e80-83d6-87dea4356f9b
+### PATCH /admin/publishers/7f450c28-996b-44df-90b9-fbf57c01b828
 **Status:** 200 — **PASS**
 
 **Request body:**
 ```json
 {
-  "name": "TEST_Publisher_Updated_2026-09-20T19-17-46-305Z"
+  "name": "TEST_Publisher_Updated_2026-09-21T05-34-59-088Z"
 }
 ```
 
@@ -418,9 +429,9 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
-    "slug": "test-publisher-2026-09-20T19-17-46-305Z",
-    "name": "TEST_Publisher_Updated_2026-09-20T19-17-46-305Z",
+    "id": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "slug": "test-publisher-2026-09-21T05-34-59-088Z",
+    "name": "TEST_Publisher_Updated_2026-09-21T05-34-59-088Z",
     "description": null,
     "logo": null,
     "address": null,
@@ -431,8 +442,8 @@ Base URL: `http://localhost:4000/api`
     "status": "active",
     "seoTitle": null,
     "seoDescription": null,
-    "createdAt": "2026-09-20T19:17:56.395Z",
-    "updatedAt": "2026-09-20T19:18:11.062Z"
+    "createdAt": "2026-09-21T05:35:07.830Z",
+    "updatedAt": "2026-09-21T05:35:13.648Z"
   }
 }
 ```
@@ -461,25 +472,50 @@ Base URL: `http://localhost:4000/api`
 ```
 
 ### POST /admin/publications
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 201 — **PASS** (Expected 201)
 
 **Request body:**
 ```json
 {
-  "slug": "test-journal-2026-09-20T19-17-46-305Z",
-  "publisherId": "d9a829e1-3eab-4e80-83d6-87dea4356f9b",
-  "name": "TEST_Journal_2026-09-20T19-17-46-305Z",
-  "shortName": "TJ"
+  "slug": "test-journal-2026-09-21T05-34-59-088Z",
+  "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+  "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+  "shortName": "TJ",
+  "status": "active"
 }
 ```
 
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "status: Required"
+  "success": true,
+  "data": {
+    "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "slug": "test-journal-2026-09-21T05-34-59-088Z",
+    "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+    "shortName": "TJ",
+    "tagline": null,
+    "issnOnline": null,
+    "issnPrint": null,
+    "founded": null,
+    "frequency": null,
+    "language": null,
+    "country": null,
+    "reviewModel": null,
+    "accessModel": null,
+    "subjectAreaIds": [],
+    "email": null,
+    "address": null,
+    "website": null,
+    "logo": null,
+    "cover": null,
+    "content": null,
+    "status": "active",
+    "seoTitle": null,
+    "seoDescription": null,
+    "createdAt": "2026-09-21T05:35:14.627Z",
+    "updatedAt": "2026-09-21T05:35:14.627Z"
   }
 }
 ```
@@ -524,13 +560,41 @@ Base URL: `http://localhost:4000/api`
       "seoDescription": null,
       "createdAt": "2026-09-05T10:38:05.573Z",
       "updatedAt": "2026-09-05T10:38:05.573Z"
+    },
+    {
+      "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "slug": "test-journal-2026-09-21T05-34-59-088Z",
+      "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+      "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+      "shortName": "TJ",
+      "tagline": null,
+      "issnOnline": null,
+      "issnPrint": null,
+      "founded": null,
+      "frequency": null,
+      "language": null,
+      "country": null,
+      "reviewModel": null,
+      "accessModel": null,
+      "subjectAreaIds": [],
+      "email": null,
+      "address": null,
+      "website": null,
+      "logo": null,
+      "cover": null,
+      "content": null,
+      "status": "active",
+      "seoTitle": null,
+      "seoDescription": null,
+      "createdAt": "2026-09-21T05:35:14.627Z",
+      "updatedAt": "2026-09-21T05:35:14.627Z"
     }
   ]
 }
 ```
 
-### GET /publications/test-journal-2026-09-20T19-17-46-305Z
-**Status:** 404 — **PASS**
+### GET /publications/test-journal-2026-09-21T05-34-59-088Z
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -540,16 +604,40 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "PUBLICATION_NOT_FOUND",
-    "message": "Not found: test-journal-2026-09-20T19-17-46-305Z"
+  "success": true,
+  "data": {
+    "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "slug": "test-journal-2026-09-21T05-34-59-088Z",
+    "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+    "shortName": "TJ",
+    "tagline": null,
+    "issnOnline": null,
+    "issnPrint": null,
+    "founded": null,
+    "frequency": null,
+    "language": null,
+    "country": null,
+    "reviewModel": null,
+    "accessModel": null,
+    "subjectAreaIds": [],
+    "email": null,
+    "address": null,
+    "website": null,
+    "logo": null,
+    "cover": null,
+    "content": null,
+    "status": "active",
+    "seoTitle": null,
+    "seoDescription": null,
+    "createdAt": "2026-09-21T05:35:14.627Z",
+    "updatedAt": "2026-09-21T05:35:14.627Z"
   }
 }
 ```
 
-### GET /admin/publications/undefined
-**Status:** 404 — **PASS**
+### GET /admin/publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -559,16 +647,40 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "PUBLICATION_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "slug": "test-journal-2026-09-21T05-34-59-088Z",
+    "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+    "shortName": "TJ",
+    "tagline": null,
+    "issnOnline": null,
+    "issnPrint": null,
+    "founded": null,
+    "frequency": null,
+    "language": null,
+    "country": null,
+    "reviewModel": null,
+    "accessModel": null,
+    "subjectAreaIds": [],
+    "email": null,
+    "address": null,
+    "website": null,
+    "logo": null,
+    "cover": null,
+    "content": null,
+    "status": "active",
+    "seoTitle": null,
+    "seoDescription": null,
+    "createdAt": "2026-09-21T05:35:14.627Z",
+    "updatedAt": "2026-09-21T05:35:14.627Z"
   }
 }
 ```
 
-### PATCH /admin/publications/undefined
-**Status:** 404 — **PASS**
+### PATCH /admin/publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -580,16 +692,40 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "PUBLICATION_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "slug": "test-journal-2026-09-21T05-34-59-088Z",
+    "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+    "shortName": "TJ",
+    "tagline": "Updated via test script",
+    "issnOnline": null,
+    "issnPrint": null,
+    "founded": null,
+    "frequency": null,
+    "language": null,
+    "country": null,
+    "reviewModel": null,
+    "accessModel": null,
+    "subjectAreaIds": [],
+    "email": null,
+    "address": null,
+    "website": null,
+    "logo": null,
+    "cover": null,
+    "content": null,
+    "status": "active",
+    "seoTitle": null,
+    "seoDescription": null,
+    "createdAt": "2026-09-21T05:35:14.627Z",
+    "updatedAt": "2026-09-21T05:35:18.707Z"
   }
 }
 ```
 
-### PATCH /admin/publications/undefined
-**Status:** 404 — **PASS**
+### PATCH /admin/publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -601,10 +737,34 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "PUBLICATION_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "slug": "test-journal-2026-09-21T05-34-59-088Z",
+    "publisherId": "7f450c28-996b-44df-90b9-fbf57c01b828",
+    "name": "TEST_Journal_2026-09-21T05-34-59-088Z",
+    "shortName": "TJ",
+    "tagline": "Updated via test script",
+    "issnOnline": null,
+    "issnPrint": null,
+    "founded": null,
+    "frequency": null,
+    "language": null,
+    "country": null,
+    "reviewModel": null,
+    "accessModel": null,
+    "subjectAreaIds": [],
+    "email": null,
+    "address": null,
+    "website": null,
+    "logo": null,
+    "cover": null,
+    "content": null,
+    "status": "archived",
+    "seoTitle": null,
+    "seoDescription": null,
+    "createdAt": "2026-09-21T05:35:14.627Z",
+    "updatedAt": "2026-09-21T05:35:19.818Z"
   }
 }
 ```
@@ -631,11 +791,12 @@ Base URL: `http://localhost:4000/api`
 ```
 
 ### POST /admin/volumes
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 201 — **PASS** (Expected 201)
 
 **Request body:**
 ```json
 {
+  "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
   "number": 1,
   "year": 2026,
   "status": "active"
@@ -645,10 +806,16 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "publicationId: Required"
+  "success": true,
+  "data": {
+    "id": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "year": 2026,
+    "description": null,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:21.489Z",
+    "updatedAt": "2026-09-21T05:35:21.489Z"
   }
 }
 ```
@@ -675,12 +842,22 @@ Base URL: `http://localhost:4000/api`
       "status": "active",
       "createdAt": "2026-09-05T10:38:07.833Z",
       "updatedAt": "2026-09-05T10:38:07.833Z"
+    },
+    {
+      "id": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "number": 1,
+      "year": 2026,
+      "description": null,
+      "status": "active",
+      "createdAt": "2026-09-21T05:35:21.489Z",
+      "updatedAt": "2026-09-21T05:35:21.489Z"
     }
   ]
 }
 ```
 
-### GET /publications/undefined/volumes
+### GET /publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2/volumes
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -692,12 +869,23 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": []
+  "data": [
+    {
+      "id": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "number": 1,
+      "year": 2026,
+      "description": null,
+      "status": "active",
+      "createdAt": "2026-09-21T05:35:21.489Z",
+      "updatedAt": "2026-09-21T05:35:21.489Z"
+    }
+  ]
 }
 ```
 
-### GET /volumes/undefined
-**Status:** 404 — **PASS**
+### GET /volumes/eefb9a93-ee96-4e05-81a8-b622fef94fb5
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -707,10 +895,16 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VOLUME_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "year": 2026,
+    "description": null,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:21.489Z",
+    "updatedAt": "2026-09-21T05:35:21.489Z"
   }
 }
 ```
@@ -734,8 +928,8 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### PATCH /admin/volumes/undefined
-**Status:** 404 — **PASS**
+### PATCH /admin/volumes/eefb9a93-ee96-4e05-81a8-b622fef94fb5
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -747,20 +941,28 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VOLUME_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "year": 2027,
+    "description": null,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:21.489Z",
+    "updatedAt": "2026-09-21T05:35:26.042Z"
   }
 }
 ```
 
 ### POST /admin/issues
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 201 — **PASS** (Expected 201)
 
 **Request body:**
 ```json
 {
+  "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+  "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
   "number": 1,
   "label": "Issue 1",
   "status": "current"
@@ -770,10 +972,20 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "volumeId: Required; publicationId: Required"
+  "success": true,
+  "data": {
+    "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+    "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "label": "Issue 1",
+    "period": null,
+    "publicationDate": null,
+    "description": null,
+    "cover": null,
+    "status": "current",
+    "createdAt": "2026-09-21T05:35:27.438Z",
+    "updatedAt": "2026-09-21T05:35:27.438Z"
   }
 }
 ```
@@ -807,12 +1019,29 @@ Base URL: `http://localhost:4000/api`
       "volume": {
         "number": 1
       }
+    },
+    {
+      "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+      "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "number": 1,
+      "label": "Issue 1",
+      "period": null,
+      "publicationDate": null,
+      "description": null,
+      "cover": null,
+      "status": "current",
+      "createdAt": "2026-09-21T05:35:27.438Z",
+      "updatedAt": "2026-09-21T05:35:27.438Z",
+      "volume": {
+        "number": 1
+      }
     }
   ]
 }
 ```
 
-### GET /volumes/undefined/issues
+### GET /volumes/eefb9a93-ee96-4e05-81a8-b622fef94fb5/issues
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -824,11 +1053,29 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": []
+  "data": [
+    {
+      "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+      "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "number": 1,
+      "label": "Issue 1",
+      "period": null,
+      "publicationDate": null,
+      "description": null,
+      "cover": null,
+      "status": "current",
+      "createdAt": "2026-09-21T05:35:27.438Z",
+      "updatedAt": "2026-09-21T05:35:27.438Z",
+      "volume": {
+        "number": 1
+      }
+    }
+  ]
 }
 ```
 
-### GET /publications/undefined/issues
+### GET /publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2/issues
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -840,11 +1087,29 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": []
+  "data": [
+    {
+      "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+      "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "number": 1,
+      "label": "Issue 1",
+      "period": null,
+      "publicationDate": null,
+      "description": null,
+      "cover": null,
+      "status": "current",
+      "createdAt": "2026-09-21T05:35:27.438Z",
+      "updatedAt": "2026-09-21T05:35:27.438Z",
+      "volume": {
+        "number": 1
+      }
+    }
+  ]
 }
 ```
 
-### GET /publications/undefined/current-issue
+### GET /publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2/current-issue
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -856,31 +1121,54 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": null
-}
-```
-
-### GET /issues/undefined
-**Status:** 404 — **PASS**
-
-**Request body:**
-```json
-(none)
-```
-
-**Response:**
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ISSUE_NOT_FOUND",
-    "message": "Not found: undefined"
+  "data": {
+    "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+    "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "label": "Issue 1",
+    "period": null,
+    "publicationDate": null,
+    "description": null,
+    "cover": null,
+    "status": "current",
+    "createdAt": "2026-09-21T05:35:27.438Z",
+    "updatedAt": "2026-09-21T05:35:27.438Z"
   }
 }
 ```
 
-### PATCH /admin/issues/undefined
-**Status:** 404 — **PASS**
+### GET /issues/7a21fa38-2ea7-44ce-8c1f-41debe391eab
+**Status:** 200 — **PASS**
+
+**Request body:**
+```json
+(none)
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+    "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "label": "Issue 1",
+    "period": null,
+    "publicationDate": null,
+    "description": null,
+    "cover": null,
+    "status": "current",
+    "createdAt": "2026-09-21T05:35:27.438Z",
+    "updatedAt": "2026-09-21T05:35:27.438Z"
+  }
+}
+```
+
+### PATCH /admin/issues/7a21fa38-2ea7-44ce-8c1f-41debe391eab
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -892,10 +1180,20 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ISSUE_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "7a21fa38-2ea7-44ce-8c1f-41debe391eab",
+    "volumeId": "eefb9a93-ee96-4e05-81a8-b622fef94fb5",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "number": 1,
+    "label": "Issue 1 (Updated)",
+    "period": null,
+    "publicationDate": null,
+    "description": null,
+    "cover": null,
+    "status": "current",
+    "createdAt": "2026-09-21T05:35:27.438Z",
+    "updatedAt": "2026-09-21T05:35:35.630Z"
   }
 }
 ```
@@ -906,10 +1204,10 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "slug": "test-author-2026-09-20T19-17-46-305Z",
+  "slug": "test-author-2026-09-21T05-34-59-088Z",
   "firstName": "Test",
-  "lastName": "Author_2026-09-20T19-17-46-305Z",
-  "fullName": "Test Author_2026-09-20T19-17-46-305Z"
+  "lastName": "Author_2026-09-21T05-34-59-088Z",
+  "fullName": "Test Author_2026-09-21T05-34-59-088Z"
 }
 ```
 
@@ -918,11 +1216,11 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "6959b587-1fe5-4c59-af4f-f46c76fc599a",
-    "slug": "test-author-2026-09-20T19-17-46-305Z",
+    "id": "8db41882-5109-4a12-acb1-989150f188b2",
+    "slug": "test-author-2026-09-21T05-34-59-088Z",
     "firstName": "Test",
-    "lastName": "Author_2026-09-20T19-17-46-305Z",
-    "fullName": "Test Author_2026-09-20T19-17-46-305Z",
+    "lastName": "Author_2026-09-21T05-34-59-088Z",
+    "fullName": "Test Author_2026-09-21T05-34-59-088Z",
     "institution": null,
     "department": null,
     "country": null,
@@ -931,8 +1229,8 @@ Base URL: `http://localhost:4000/api`
     "profileImage": null,
     "website": null,
     "email": null,
-    "createdAt": "2026-09-20T19:18:32.465Z",
-    "updatedAt": "2026-09-20T19:18:32.465Z"
+    "createdAt": "2026-09-21T05:35:36.995Z",
+    "updatedAt": "2026-09-21T05:35:36.995Z"
   }
 }
 ```
@@ -959,13 +1257,30 @@ Base URL: `http://localhost:4000/api`
       "institution": null,
       "department": null,
       "country": null,
-      "bio": null,
+      "bio": "Updated via test script",
       "orcid": null,
       "profileImage": null,
       "website": null,
       "email": null,
       "createdAt": "2026-09-20T19:18:32.465Z",
-      "updatedAt": "2026-09-20T19:18:32.465Z"
+      "updatedAt": "2026-09-20T19:18:38.662Z"
+    },
+    {
+      "id": "8db41882-5109-4a12-acb1-989150f188b2",
+      "slug": "test-author-2026-09-21T05-34-59-088Z",
+      "firstName": "Test",
+      "lastName": "Author_2026-09-21T05-34-59-088Z",
+      "fullName": "Test Author_2026-09-21T05-34-59-088Z",
+      "institution": null,
+      "department": null,
+      "country": null,
+      "bio": null,
+      "orcid": null,
+      "profileImage": null,
+      "website": null,
+      "email": null,
+      "createdAt": "2026-09-21T05:35:36.995Z",
+      "updatedAt": "2026-09-21T05:35:36.995Z"
     },
     {
       "id": "35218f79-97bc-4493-8fb4-c2122b536234",
@@ -988,7 +1303,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /authors/test-author-2026-09-20T19-17-46-305Z
+### GET /authors/test-author-2026-09-21T05-34-59-088Z
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1001,11 +1316,11 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "6959b587-1fe5-4c59-af4f-f46c76fc599a",
-    "slug": "test-author-2026-09-20T19-17-46-305Z",
+    "id": "8db41882-5109-4a12-acb1-989150f188b2",
+    "slug": "test-author-2026-09-21T05-34-59-088Z",
     "firstName": "Test",
-    "lastName": "Author_2026-09-20T19-17-46-305Z",
-    "fullName": "Test Author_2026-09-20T19-17-46-305Z",
+    "lastName": "Author_2026-09-21T05-34-59-088Z",
+    "fullName": "Test Author_2026-09-21T05-34-59-088Z",
     "institution": null,
     "department": null,
     "country": null,
@@ -1014,13 +1329,13 @@ Base URL: `http://localhost:4000/api`
     "profileImage": null,
     "website": null,
     "email": null,
-    "createdAt": "2026-09-20T19:18:32.465Z",
-    "updatedAt": "2026-09-20T19:18:32.465Z"
+    "createdAt": "2026-09-21T05:35:36.995Z",
+    "updatedAt": "2026-09-21T05:35:36.995Z"
   }
 }
 ```
 
-### GET /authors/6959b587-1fe5-4c59-af4f-f46c76fc599a/articles
+### GET /authors/8db41882-5109-4a12-acb1-989150f188b2/articles
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1036,7 +1351,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /admin/authors/6959b587-1fe5-4c59-af4f-f46c76fc599a
+### GET /admin/authors/8db41882-5109-4a12-acb1-989150f188b2
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1049,11 +1364,11 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "6959b587-1fe5-4c59-af4f-f46c76fc599a",
-    "slug": "test-author-2026-09-20T19-17-46-305Z",
+    "id": "8db41882-5109-4a12-acb1-989150f188b2",
+    "slug": "test-author-2026-09-21T05-34-59-088Z",
     "firstName": "Test",
-    "lastName": "Author_2026-09-20T19-17-46-305Z",
-    "fullName": "Test Author_2026-09-20T19-17-46-305Z",
+    "lastName": "Author_2026-09-21T05-34-59-088Z",
+    "fullName": "Test Author_2026-09-21T05-34-59-088Z",
     "institution": null,
     "department": null,
     "country": null,
@@ -1062,13 +1377,13 @@ Base URL: `http://localhost:4000/api`
     "profileImage": null,
     "website": null,
     "email": null,
-    "createdAt": "2026-09-20T19:18:32.465Z",
-    "updatedAt": "2026-09-20T19:18:32.465Z"
+    "createdAt": "2026-09-21T05:35:36.995Z",
+    "updatedAt": "2026-09-21T05:35:36.995Z"
   }
 }
 ```
 
-### PATCH /admin/authors/6959b587-1fe5-4c59-af4f-f46c76fc599a
+### PATCH /admin/authors/8db41882-5109-4a12-acb1-989150f188b2
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1083,11 +1398,11 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "6959b587-1fe5-4c59-af4f-f46c76fc599a",
-    "slug": "test-author-2026-09-20T19-17-46-305Z",
+    "id": "8db41882-5109-4a12-acb1-989150f188b2",
+    "slug": "test-author-2026-09-21T05-34-59-088Z",
     "firstName": "Test",
-    "lastName": "Author_2026-09-20T19-17-46-305Z",
-    "fullName": "Test Author_2026-09-20T19-17-46-305Z",
+    "lastName": "Author_2026-09-21T05-34-59-088Z",
+    "fullName": "Test Author_2026-09-21T05-34-59-088Z",
     "institution": null,
     "department": null,
     "country": null,
@@ -1096,21 +1411,22 @@ Base URL: `http://localhost:4000/api`
     "profileImage": null,
     "website": null,
     "email": null,
-    "createdAt": "2026-09-20T19:18:32.465Z",
-    "updatedAt": "2026-09-20T19:18:38.662Z"
+    "createdAt": "2026-09-21T05:35:36.995Z",
+    "updatedAt": "2026-09-21T05:35:42.047Z"
   }
 }
 ```
 
 ### POST /admin/editors
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 201 — **PASS** (Expected 201)
 
 **Request body:**
 ```json
 {
-  "slug": "test-editor-2026-09-20T19-17-46-305Z",
-  "name": "Test Editor_2026-09-20T19-17-46-305Z",
+  "slug": "test-editor-2026-09-21T05-34-59-088Z",
+  "name": "Test Editor_2026-09-21T05-34-59-088Z",
   "role": "managing_editor",
+  "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
   "status": "active"
 }
 ```
@@ -1118,10 +1434,23 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "publicationId: Required"
+  "success": true,
+  "data": {
+    "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+    "slug": "test-editor-2026-09-21T05-34-59-088Z",
+    "name": "Test Editor_2026-09-21T05-34-59-088Z",
+    "role": "managing_editor",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "institution": null,
+    "country": null,
+    "bio": null,
+    "profileImage": null,
+    "orcid": null,
+    "researchInterests": [],
+    "displayOrder": 0,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:42.949Z",
+    "updatedAt": "2026-09-21T05:35:42.949Z"
   }
 }
 ```
@@ -1157,12 +1486,29 @@ Base URL: `http://localhost:4000/api`
       "status": "active",
       "createdAt": "2026-09-06T02:11:21.577Z",
       "updatedAt": "2026-09-06T02:11:21.577Z"
+    },
+    {
+      "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+      "slug": "test-editor-2026-09-21T05-34-59-088Z",
+      "name": "Test Editor_2026-09-21T05-34-59-088Z",
+      "role": "managing_editor",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "institution": null,
+      "country": null,
+      "bio": null,
+      "profileImage": null,
+      "orcid": null,
+      "researchInterests": [],
+      "displayOrder": 0,
+      "status": "active",
+      "createdAt": "2026-09-21T05:35:42.949Z",
+      "updatedAt": "2026-09-21T05:35:42.949Z"
     }
   ]
 }
 ```
 
-### GET /publications/undefined/editorial-board
+### GET /publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2/editorial-board
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1174,12 +1520,30 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": []
+  "data": [
+    {
+      "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+      "slug": "test-editor-2026-09-21T05-34-59-088Z",
+      "name": "Test Editor_2026-09-21T05-34-59-088Z",
+      "role": "managing_editor",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "institution": null,
+      "country": null,
+      "bio": null,
+      "profileImage": null,
+      "orcid": null,
+      "researchInterests": [],
+      "displayOrder": 0,
+      "status": "active",
+      "createdAt": "2026-09-21T05:35:42.949Z",
+      "updatedAt": "2026-09-21T05:35:42.949Z"
+    }
+  ]
 }
 ```
 
-### GET /editors/test-editor-2026-09-20T19-17-46-305Z
-**Status:** 404 — **PASS**
+### GET /editors/test-editor-2026-09-21T05-34-59-088Z
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -1189,16 +1553,29 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "EDITOR_NOT_FOUND",
-    "message": "Not found: test-editor-2026-09-20T19-17-46-305Z"
+  "success": true,
+  "data": {
+    "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+    "slug": "test-editor-2026-09-21T05-34-59-088Z",
+    "name": "Test Editor_2026-09-21T05-34-59-088Z",
+    "role": "managing_editor",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "institution": null,
+    "country": null,
+    "bio": null,
+    "profileImage": null,
+    "orcid": null,
+    "researchInterests": [],
+    "displayOrder": 0,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:42.949Z",
+    "updatedAt": "2026-09-21T05:35:42.949Z"
   }
 }
 ```
 
-### GET /admin/editors/undefined
-**Status:** 404 — **PASS**
+### GET /admin/editors/ec586ebe-9914-46d0-8bf1-5ae9a19b8b71
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -1208,16 +1585,29 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "EDITOR_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+    "slug": "test-editor-2026-09-21T05-34-59-088Z",
+    "name": "Test Editor_2026-09-21T05-34-59-088Z",
+    "role": "managing_editor",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "institution": null,
+    "country": null,
+    "bio": null,
+    "profileImage": null,
+    "orcid": null,
+    "researchInterests": [],
+    "displayOrder": 0,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:42.949Z",
+    "updatedAt": "2026-09-21T05:35:42.949Z"
   }
 }
 ```
 
-### PATCH /admin/editors/undefined
-**Status:** 404 — **PASS**
+### PATCH /admin/editors/ec586ebe-9914-46d0-8bf1-5ae9a19b8b71
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -1229,10 +1619,23 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "EDITOR_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71",
+    "slug": "test-editor-2026-09-21T05-34-59-088Z",
+    "name": "Test Editor_2026-09-21T05-34-59-088Z",
+    "role": "managing_editor",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "institution": null,
+    "country": null,
+    "bio": "Updated via test script",
+    "profileImage": null,
+    "orcid": null,
+    "researchInterests": [],
+    "displayOrder": 0,
+    "status": "active",
+    "createdAt": "2026-09-21T05:35:42.949Z",
+    "updatedAt": "2026-09-21T05:35:47.513Z"
   }
 }
 ```
@@ -1243,8 +1646,8 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "name": "Test Reviewer_2026-09-20T19-17-46-305Z",
-  "email": "test-reviewer-2026-09-20T19-17-46-305Z@example.com",
+  "name": "Test Reviewer_2026-09-21T05-34-59-088Z",
+  "email": "test-reviewer-2026-09-21T05-34-59-088Z@example.com",
   "status": "active",
   "expertise": [
     "Testing"
@@ -1257,17 +1660,17 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "98e69b40-1499-4ff1-90ce-1f55d87e938a",
-    "name": "Test Reviewer_2026-09-20T19-17-46-305Z",
-    "email": "test-reviewer-2026-09-20T19-17-46-305Z@example.com",
+    "id": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2",
+    "name": "Test Reviewer_2026-09-21T05-34-59-088Z",
+    "email": "test-reviewer-2026-09-21T05-34-59-088Z@example.com",
     "institution": null,
     "country": null,
     "expertise": [
       "Testing"
     ],
     "status": "active",
-    "createdAt": "2026-09-20T19:18:46.153Z",
-    "updatedAt": "2026-09-20T19:18:46.153Z"
+    "createdAt": "2026-09-21T05:35:48.600Z",
+    "updatedAt": "2026-09-21T05:35:48.600Z"
   }
 }
 ```
@@ -1290,20 +1693,34 @@ Base URL: `http://localhost:4000/api`
       "name": "Test Reviewer_2026-09-20T19-17-46-305Z",
       "email": "test-reviewer-2026-09-20T19-17-46-305Z@example.com",
       "institution": null,
-      "country": null,
+      "country": "Testland",
       "expertise": [
         "Testing"
       ],
       "status": "active",
       "createdAt": "2026-09-20T19:18:46.153Z",
-      "updatedAt": "2026-09-20T19:18:46.153Z",
+      "updatedAt": "2026-09-20T19:18:49.976Z",
+      "assignedReviewCount": 0
+    },
+    {
+      "id": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2",
+      "name": "Test Reviewer_2026-09-21T05-34-59-088Z",
+      "email": "test-reviewer-2026-09-21T05-34-59-088Z@example.com",
+      "institution": null,
+      "country": null,
+      "expertise": [
+        "Testing"
+      ],
+      "status": "active",
+      "createdAt": "2026-09-21T05:35:48.600Z",
+      "updatedAt": "2026-09-21T05:35:48.600Z",
       "assignedReviewCount": 0
     }
   ]
 }
 ```
 
-### GET /admin/reviewers/98e69b40-1499-4ff1-90ce-1f55d87e938a
+### GET /admin/reviewers/59e81c88-3fc5-46f0-bdb1-c38ab6d830c2
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1316,22 +1733,22 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "98e69b40-1499-4ff1-90ce-1f55d87e938a",
-    "name": "Test Reviewer_2026-09-20T19-17-46-305Z",
-    "email": "test-reviewer-2026-09-20T19-17-46-305Z@example.com",
+    "id": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2",
+    "name": "Test Reviewer_2026-09-21T05-34-59-088Z",
+    "email": "test-reviewer-2026-09-21T05-34-59-088Z@example.com",
     "institution": null,
     "country": null,
     "expertise": [
       "Testing"
     ],
     "status": "active",
-    "createdAt": "2026-09-20T19:18:46.153Z",
-    "updatedAt": "2026-09-20T19:18:46.153Z"
+    "createdAt": "2026-09-21T05:35:48.600Z",
+    "updatedAt": "2026-09-21T05:35:48.600Z"
   }
 }
 ```
 
-### PATCH /admin/reviewers/98e69b40-1499-4ff1-90ce-1f55d87e938a
+### PATCH /admin/reviewers/59e81c88-3fc5-46f0-bdb1-c38ab6d830c2
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1346,36 +1763,39 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "98e69b40-1499-4ff1-90ce-1f55d87e938a",
-    "name": "Test Reviewer_2026-09-20T19-17-46-305Z",
-    "email": "test-reviewer-2026-09-20T19-17-46-305Z@example.com",
+    "id": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2",
+    "name": "Test Reviewer_2026-09-21T05-34-59-088Z",
+    "email": "test-reviewer-2026-09-21T05-34-59-088Z@example.com",
     "institution": null,
     "country": "Testland",
     "expertise": [
       "Testing"
     ],
     "status": "active",
-    "createdAt": "2026-09-20T19:18:46.153Z",
-    "updatedAt": "2026-09-20T19:18:49.976Z"
+    "createdAt": "2026-09-21T05:35:48.600Z",
+    "updatedAt": "2026-09-21T05:35:58.261Z"
   }
 }
 ```
 
 ### POST /admin/articles
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 404 — **FAIL** (Expected 201)
 
 **Request body:**
 ```json
 {
-  "slug": "test-article-2026-09-20T19-17-46-305Z",
-  "title": "TEST_Article_2026-09-20T19-17-46-305Z",
+  "slug": "test-article-2026-09-21T05-34-59-088Z",
+  "title": "TEST_Article_2026-09-21T05-34-59-088Z",
   "abstract": "A test abstract created by test-all-endpoints.mjs.",
+  "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
   "articleType": "Research Article",
   "status": "draft",
   "authorIds": [
-    "6959b587-1fe5-4c59-af4f-f46c76fc599a"
+    "8db41882-5109-4a12-acb1-989150f188b2"
   ],
-  "editorIds": []
+  "editorIds": [
+    "ec586ebe-9914-46d0-8bf1-5ae9a19b8b71"
+  ]
 }
 ```
 
@@ -1384,8 +1804,8 @@ Base URL: `http://localhost:4000/api`
 {
   "success": false,
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "publicationId: Required"
+    "code": "ARTICLE_NOT_FOUND",
+    "message": "Not found: b02f766d-04a5-46da-b3a9-c7028f82a027"
   }
 }
 ```
@@ -1572,7 +1992,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /articles/test-article-2026-09-20T19-17-46-305Z
+### GET /articles/test-article-2026-09-21T05-34-59-088Z
 **Status:** 404 — **PASS** (Expected 404)
 
 **Request body:**
@@ -1586,7 +2006,7 @@ Base URL: `http://localhost:4000/api`
   "success": false,
   "error": {
     "code": "ARTICLE_NOT_FOUND",
-    "message": "Not found: test-article-2026-09-20T19-17-46-305Z"
+    "message": "Not found: test-article-2026-09-21T05-34-59-088Z"
   }
 }
 ```
@@ -1759,7 +2179,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /articles/test-article-2026-09-20T19-17-46-305Z
+### GET /articles/test-article-2026-09-21T05-34-59-088Z
 **Status:** 404 — **FAIL** (Expected 200)
 
 **Request body:**
@@ -1773,7 +2193,7 @@ Base URL: `http://localhost:4000/api`
   "success": false,
   "error": {
     "code": "ARTICLE_NOT_FOUND",
-    "message": "Not found: test-article-2026-09-20T19-17-46-305Z"
+    "message": "Not found: test-article-2026-09-21T05-34-59-088Z"
   }
 }
 ```
@@ -1784,7 +2204,7 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "reviewerId": "98e69b40-1499-4ff1-90ce-1f55d87e938a",
+  "reviewerId": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2",
   "dueDate": "2026-12-31"
 }
 ```
@@ -1832,7 +2252,7 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /admin/reviews?reviewerId=98e69b40-1499-4ff1-90ce-1f55d87e938a
+### GET /admin/reviews?reviewerId=59e81c88-3fc5-46f0-bdb1-c38ab6d830c2
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -1873,7 +2293,7 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "reviewerId": "98e69b40-1499-4ff1-90ce-1f55d87e938a"
+  "reviewerId": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2"
 }
 ```
 
@@ -1895,7 +2315,7 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "manuscriptId": "not-a-real-id",
-  "reviewerId": "98e69b40-1499-4ff1-90ce-1f55d87e938a"
+  "reviewerId": "59e81c88-3fc5-46f0-bdb1-c38ab6d830c2"
 }
 ```
 
@@ -1970,12 +2390,13 @@ Base URL: `http://localhost:4000/api`
 ```
 
 ### POST /admin/indexing
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 201 — **PASS** (Expected 201)
 
 **Request body:**
 ```json
 {
-  "name": "TEST_Index_2026-09-20T19-17-46-305Z",
+  "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+  "name": "TEST_Index_2026-09-21T05-34-59-088Z",
   "status": "unconfirmed"
 }
 ```
@@ -1983,10 +2404,18 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "publicationId: Required"
+  "success": true,
+  "data": {
+    "id": "f4f605e0-1c8b-4d1f-8cba-6422d54de3dd",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "name": "TEST_Index_2026-09-21T05-34-59-088Z",
+    "description": null,
+    "url": null,
+    "logo": null,
+    "status": "unconfirmed",
+    "displayOrder": 0,
+    "createdAt": "2026-09-21T05:36:32.399Z",
+    "updatedAt": "2026-09-21T05:36:32.399Z"
   }
 }
 ```
@@ -2003,11 +2432,24 @@ Base URL: `http://localhost:4000/api`
 ```json
 {
   "success": true,
-  "data": []
+  "data": [
+    {
+      "id": "f4f605e0-1c8b-4d1f-8cba-6422d54de3dd",
+      "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+      "name": "TEST_Index_2026-09-21T05-34-59-088Z",
+      "description": null,
+      "url": null,
+      "logo": null,
+      "status": "unconfirmed",
+      "displayOrder": 0,
+      "createdAt": "2026-09-21T05:36:32.399Z",
+      "updatedAt": "2026-09-21T05:36:32.399Z"
+    }
+  ]
 }
 ```
 
-### GET /publications/undefined/indexing
+### GET /publications/ce91598c-8c56-4bfe-88a9-ab67225a46a2/indexing
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2023,8 +2465,8 @@ Base URL: `http://localhost:4000/api`
 }
 ```
 
-### GET /admin/indexing/undefined
-**Status:** 404 — **PASS**
+### GET /admin/indexing/f4f605e0-1c8b-4d1f-8cba-6422d54de3dd
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -2034,16 +2476,24 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INDEXING_SERVICE_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "f4f605e0-1c8b-4d1f-8cba-6422d54de3dd",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "name": "TEST_Index_2026-09-21T05-34-59-088Z",
+    "description": null,
+    "url": null,
+    "logo": null,
+    "status": "unconfirmed",
+    "displayOrder": 0,
+    "createdAt": "2026-09-21T05:36:32.399Z",
+    "updatedAt": "2026-09-21T05:36:32.399Z"
   }
 }
 ```
 
-### PATCH /admin/indexing/undefined
-**Status:** 404 — **PASS**
+### PATCH /admin/indexing/f4f605e0-1c8b-4d1f-8cba-6422d54de3dd
+**Status:** 200 — **PASS**
 
 **Request body:**
 ```json
@@ -2055,10 +2505,18 @@ Base URL: `http://localhost:4000/api`
 **Response:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INDEXING_SERVICE_NOT_FOUND",
-    "message": "Not found: undefined"
+  "success": true,
+  "data": {
+    "id": "f4f605e0-1c8b-4d1f-8cba-6422d54de3dd",
+    "publicationId": "ce91598c-8c56-4bfe-88a9-ab67225a46a2",
+    "name": "TEST_Index_2026-09-21T05-34-59-088Z",
+    "description": null,
+    "url": null,
+    "logo": null,
+    "status": "confirmed",
+    "displayOrder": 0,
+    "createdAt": "2026-09-21T05:36:32.399Z",
+    "updatedAt": "2026-09-21T05:36:36.447Z"
   }
 }
 ```
@@ -2069,7 +2527,7 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "name": "TEST_Contact_2026-09-20T19-17-46-305Z",
+  "name": "TEST_Contact_2026-09-21T05-34-59-088Z",
   "email": "test-contact@example.com",
   "subject": "Test message from test-all-endpoints.mjs",
   "message": "This is a real test message sent by the endpoint test script."
@@ -2081,15 +2539,15 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "4e773c7d-3093-4731-b15a-a04fa5e69c9a",
-    "name": "TEST_Contact_2026-09-20T19-17-46-305Z",
+    "id": "d5b66eb7-2cc5-425e-89d3-8ca292e62ace",
+    "name": "TEST_Contact_2026-09-21T05-34-59-088Z",
     "email": "test-contact@example.com",
     "subject": "Test message from test-all-endpoints.mjs",
     "message": "This is a real test message sent by the endpoint test script.",
     "category": null,
     "status": "new",
-    "createdAt": "2026-09-20T19:19:20.108Z",
-    "updatedAt": "2026-09-20T19:19:20.108Z"
+    "createdAt": "2026-09-21T05:36:37.132Z",
+    "updatedAt": "2026-09-21T05:36:37.132Z"
   }
 }
 ```
@@ -2108,27 +2566,38 @@ Base URL: `http://localhost:4000/api`
   "success": true,
   "data": [
     {
+      "id": "d5b66eb7-2cc5-425e-89d3-8ca292e62ace",
+      "name": "TEST_Contact_2026-09-21T05-34-59-088Z",
+      "email": "test-contact@example.com",
+      "subject": "Test message from test-all-endpoints.mjs",
+      "message": "This is a real test message sent by the endpoint test script.",
+      "category": null,
+      "status": "new",
+      "createdAt": "2026-09-21T05:36:37.132Z",
+      "updatedAt": "2026-09-21T05:36:37.132Z"
+    },
+    {
       "id": "4e773c7d-3093-4731-b15a-a04fa5e69c9a",
       "name": "TEST_Contact_2026-09-20T19-17-46-305Z",
       "email": "test-contact@example.com",
       "subject": "Test message from test-all-endpoints.mjs",
       "message": "This is a real test message sent by the endpoint test script.",
       "category": null,
-      "status": "new",
+      "status": "read",
       "createdAt": "2026-09-20T19:19:20.108Z",
-      "updatedAt": "2026-09-20T19:19:20.108Z"
+      "updatedAt": "2026-09-20T19:19:25.717Z"
     }
   ],
   "pagination": {
     "page": 1,
     "limit": 20,
-    "total": 1,
+    "total": 2,
     "totalPages": 1
   }
 }
 ```
 
-### GET /admin/contact-messages/4e773c7d-3093-4731-b15a-a04fa5e69c9a
+### GET /admin/contact-messages/d5b66eb7-2cc5-425e-89d3-8ca292e62ace
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2141,20 +2610,20 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "4e773c7d-3093-4731-b15a-a04fa5e69c9a",
-    "name": "TEST_Contact_2026-09-20T19-17-46-305Z",
+    "id": "d5b66eb7-2cc5-425e-89d3-8ca292e62ace",
+    "name": "TEST_Contact_2026-09-21T05-34-59-088Z",
     "email": "test-contact@example.com",
     "subject": "Test message from test-all-endpoints.mjs",
     "message": "This is a real test message sent by the endpoint test script.",
     "category": null,
     "status": "new",
-    "createdAt": "2026-09-20T19:19:20.108Z",
-    "updatedAt": "2026-09-20T19:19:20.108Z"
+    "createdAt": "2026-09-21T05:36:37.132Z",
+    "updatedAt": "2026-09-21T05:36:37.132Z"
   }
 }
 ```
 
-### PATCH /admin/contact-messages/4e773c7d-3093-4731-b15a-a04fa5e69c9a/status
+### PATCH /admin/contact-messages/d5b66eb7-2cc5-425e-89d3-8ca292e62ace/status
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2169,15 +2638,15 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "4e773c7d-3093-4731-b15a-a04fa5e69c9a",
-    "name": "TEST_Contact_2026-09-20T19-17-46-305Z",
+    "id": "d5b66eb7-2cc5-425e-89d3-8ca292e62ace",
+    "name": "TEST_Contact_2026-09-21T05-34-59-088Z",
     "email": "test-contact@example.com",
     "subject": "Test message from test-all-endpoints.mjs",
     "message": "This is a real test message sent by the endpoint test script.",
     "category": null,
     "status": "read",
-    "createdAt": "2026-09-20T19:19:20.108Z",
-    "updatedAt": "2026-09-20T19:19:25.717Z"
+    "createdAt": "2026-09-21T05:36:37.132Z",
+    "updatedAt": "2026-09-21T05:36:40.954Z"
   }
 }
 ```
@@ -2204,7 +2673,7 @@ Base URL: `http://localhost:4000/api`
 ```
 
 ### POST /submissions
-**Status:** 400 — **FAIL** (Expected 201)
+**Status:** 404 — **FAIL** (Expected 201)
 
 **Request body:**
 ```json
@@ -2216,8 +2685,8 @@ Base URL: `http://localhost:4000/api`
 {
   "success": false,
   "error": {
-    "code": "PUBLICATION_NOT_FOUND",
-    "message": "That publication doesn't exist."
+    "code": "ARTICLE_NOT_FOUND",
+    "message": "Not found: faa6dc58-44dd-4229-b2ef-ca8efeab5c65"
   }
 }
 ```
@@ -2254,8 +2723,8 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "key": "test-script-uploads/60a93d6a-bac4-4165-be4b-e61b57a87237.pdf",
-    "url": "https://pub-9887a4bdd7a84a55ba94399620a2d637.r2.dev/test-script-uploads/60a93d6a-bac4-4165-be4b-e61b57a87237.pdf"
+    "key": "test-script-uploads/593e784f-bc1a-4fd6-acae-c7b1574a13ae.pdf",
+    "url": "https://pub-9887a4bdd7a84a55ba94399620a2d637.r2.dev/test-script-uploads/593e784f-bc1a-4fd6-acae-c7b1574a13ae.pdf"
   }
 }
 ```
@@ -2292,7 +2761,7 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "originalFileUrl": "https://pub-9887a4bdd7a84a55ba94399620a2d637.r2.dev/article-import-sources/1e1db77a-2fe6-4b41-87dd-dea997efee53.pdf",
+    "originalFileUrl": "https://pub-9887a4bdd7a84a55ba94399620a2d637.r2.dev/article-import-sources/a32d74c5-cef9-4284-a88f-8e95bb230d77.pdf",
     "originalFileName": "test-import.pdf",
     "html": "",
     "warnings": [
@@ -2330,8 +2799,8 @@ Base URL: `http://localhost:4000/api`
 **Request body:**
 ```json
 {
-  "name": "TEST_User_2026-09-20T19-17-46-305Z",
-  "email": "test-user-2026-09-20T19-17-46-305Z@example.com",
+  "name": "TEST_User_2026-09-21T05-34-59-088Z",
+  "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
   "role": "editorial_subadmin"
 }
 ```
@@ -2341,14 +2810,14 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "f1108ce7-201a-44ac-a009-56848b06ebd0",
-    "name": "TEST_User_2026-09-20T19-17-46-305Z",
-    "email": "test-user-2026-09-20T19-17-46-305Z@example.com",
+    "id": "f4c83bda-63e3-44b0-807d-2708ba906e51",
+    "name": "TEST_User_2026-09-21T05-34-59-088Z",
+    "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
     "role": "editorial_subadmin",
     "reviewerId": null,
     "active": true,
-    "createdAt": "2026-09-20T19:19:43.408Z",
-    "updatedAt": "2026-09-20T19:19:43.408Z"
+    "createdAt": "2026-09-21T05:36:55.256Z",
+    "updatedAt": "2026-09-21T05:36:55.256Z"
   }
 }
 ```
@@ -2404,13 +2873,23 @@ Base URL: `http://localhost:4000/api`
       "reviewerId": null,
       "active": true,
       "createdAt": "2026-09-20T19:19:43.408Z",
-      "updatedAt": "2026-09-20T19:19:43.408Z"
+      "updatedAt": "2026-09-20T19:19:49.346Z"
+    },
+    {
+      "id": "f4c83bda-63e3-44b0-807d-2708ba906e51",
+      "name": "TEST_User_2026-09-21T05-34-59-088Z",
+      "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
+      "role": "editorial_subadmin",
+      "reviewerId": null,
+      "active": true,
+      "createdAt": "2026-09-21T05:36:55.256Z",
+      "updatedAt": "2026-09-21T05:36:55.256Z"
     }
   ]
 }
 ```
 
-### GET /admin/users/f1108ce7-201a-44ac-a009-56848b06ebd0
+### GET /admin/users/f4c83bda-63e3-44b0-807d-2708ba906e51
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2423,19 +2902,19 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "f1108ce7-201a-44ac-a009-56848b06ebd0",
-    "name": "TEST_User_2026-09-20T19-17-46-305Z",
-    "email": "test-user-2026-09-20T19-17-46-305Z@example.com",
+    "id": "f4c83bda-63e3-44b0-807d-2708ba906e51",
+    "name": "TEST_User_2026-09-21T05-34-59-088Z",
+    "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
     "role": "editorial_subadmin",
     "reviewerId": null,
     "active": true,
-    "createdAt": "2026-09-20T19:19:43.408Z",
-    "updatedAt": "2026-09-20T19:19:43.408Z"
+    "createdAt": "2026-09-21T05:36:55.256Z",
+    "updatedAt": "2026-09-21T05:36:55.256Z"
   }
 }
 ```
 
-### PATCH /admin/users/f1108ce7-201a-44ac-a009-56848b06ebd0
+### PATCH /admin/users/f4c83bda-63e3-44b0-807d-2708ba906e51
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2450,19 +2929,19 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "f1108ce7-201a-44ac-a009-56848b06ebd0",
-    "name": "TEST_User_2026-09-20T19-17-46-305Z",
-    "email": "test-user-2026-09-20T19-17-46-305Z@example.com",
+    "id": "f4c83bda-63e3-44b0-807d-2708ba906e51",
+    "name": "TEST_User_2026-09-21T05-34-59-088Z",
+    "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
     "role": "editorial_subadmin",
     "reviewerId": null,
     "active": false,
-    "createdAt": "2026-09-20T19:19:43.408Z",
-    "updatedAt": "2026-09-20T19:19:48.110Z"
+    "createdAt": "2026-09-21T05:36:55.256Z",
+    "updatedAt": "2026-09-21T05:36:59.632Z"
   }
 }
 ```
 
-### PATCH /admin/users/f1108ce7-201a-44ac-a009-56848b06ebd0
+### PATCH /admin/users/f4c83bda-63e3-44b0-807d-2708ba906e51
 **Status:** 200 — **PASS**
 
 **Request body:**
@@ -2477,14 +2956,14 @@ Base URL: `http://localhost:4000/api`
 {
   "success": true,
   "data": {
-    "id": "f1108ce7-201a-44ac-a009-56848b06ebd0",
-    "name": "TEST_User_2026-09-20T19-17-46-305Z",
-    "email": "test-user-2026-09-20T19-17-46-305Z@example.com",
+    "id": "f4c83bda-63e3-44b0-807d-2708ba906e51",
+    "name": "TEST_User_2026-09-21T05-34-59-088Z",
+    "email": "test-user-2026-09-21T05-34-59-088Z@example.com",
     "role": "editorial_subadmin",
     "reviewerId": null,
     "active": true,
-    "createdAt": "2026-09-20T19:19:43.408Z",
-    "updatedAt": "2026-09-20T19:19:49.346Z"
+    "createdAt": "2026-09-21T05:36:55.256Z",
+    "updatedAt": "2026-09-21T05:37:00.653Z"
   }
 }
 ```
@@ -2530,12 +3009,24 @@ Base URL: `http://localhost:4000/api`
       "id": "6959b587-1fe5-4c59-af4f-f46c76fc599a",
       "slug": "test-author-2026-09-20T19-17-46-305Z",
       "title": "Test Author_2026-09-20T19-17-46-305Z"
+    },
+    {
+      "type": "author",
+      "id": "8db41882-5109-4a12-acb1-989150f188b2",
+      "slug": "test-author-2026-09-21T05-34-59-088Z",
+      "title": "Test Author_2026-09-21T05-34-59-088Z"
+    },
+    {
+      "type": "author",
+      "id": "f0e9e776-08ab-453e-a578-aa97a9a71f7b",
+      "slug": "test-submitter-97074c",
+      "title": "Test Submitter"
     }
   ],
   "pagination": {
     "page": 1,
     "limit": 20,
-    "total": 1,
+    "total": 3,
     "totalPages": 1
   }
 }
@@ -2622,7 +3113,7 @@ Base URL: `http://localhost:4000/api`
 ```
 
 ### GET /auth/me
-**Status:** 200 — **FAIL** (Expected 401)
+**Status:** 200 — **PASS** (Expected 200)
 
 **Request body:**
 ```json

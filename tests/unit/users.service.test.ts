@@ -12,7 +12,9 @@ vi.mock("../../src/config/db.js", () => ({ prisma }));
 vi.mock("../../src/lib/email/sendEmail.js", () => ({ sendEmail }));
 vi.mock("../../src/modules/auth/auth.service.js", () => ({ issuePasswordResetToken }));
 
-const { createUser, updateUser, listUsers, getUserById } = await import("../../src/modules/users/users.service.js");
+const { createUser, updateUser, listUsers, getUserById, setUserPassword } = await import(
+  "../../src/modules/users/users.service.js",
+);
 
 const FAKE_USER = {
   id: "user-1",
@@ -101,5 +103,59 @@ describe("createUser / updateUser / listUsers / getUserById", () => {
       expect.objectContaining({ where: { id: "user-1" }, data: expect.objectContaining({ active: false }) }),
     );
     expect(user.active).toBe(false);
+  });
+});
+
+describe("createUser / setUserPassword: admin-chosen vs generated password", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.user.create.mockResolvedValue(FAKE_USER);
+    prisma.user.update.mockResolvedValue(FAKE_USER);
+    prisma.user.findUnique.mockResolvedValue(FAKE_USER);
+    issuePasswordResetToken.mockResolvedValue("https://frontend.example/reset-password?token=abc123");
+  });
+
+  it("createUser with an admin-supplied password does not echo it back, but still emails a set-password link", async () => {
+    const result = await createUser({
+      name: "Ada",
+      email: "ada@example.com",
+      role: "editorial_subadmin",
+      password: "Admin-Chosen-123",
+    });
+    expect(result).not.toHaveProperty("temporaryPassword");
+    expect(issuePasswordResetToken).toHaveBeenCalledWith(FAKE_USER.id);
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ template: "user-account-created", data: expect.objectContaining({ hasTemporaryPassword: false }) }),
+    );
+  });
+
+  it("createUser with no password generates one, returns it once, and still emails a set-password link", async () => {
+    const result = await createUser({ name: "Ada", email: "ada@example.com", role: "editorial_subadmin" });
+    expect(typeof result.temporaryPassword).toBe("string");
+    expect(result.temporaryPassword!.length).toBeGreaterThanOrEqual(10);
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ hasTemporaryPassword: true }) }),
+    );
+  });
+
+  it("setUserPassword: admin-chosen password is not echoed back, notifies by default", async () => {
+    const result = await setUserPassword("user-1", { password: "Admin-Reset-456" });
+    expect(result).not.toHaveProperty("temporaryPassword");
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ template: "admin-password-changed" }));
+  });
+
+  it("setUserPassword: no password generates one and returns it once", async () => {
+    const result = await setUserPassword("user-1", {});
+    expect(typeof result.temporaryPassword).toBe("string");
+  });
+
+  it("setUserPassword: notify:false skips the email entirely", async () => {
+    await setUserPassword("user-1", { password: "Admin-Reset-456", notify: false });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("setUserPassword on a missing user throws USER_NOT_FOUND, not an unhandled reject", async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(setUserPassword("ghost", {})).rejects.toMatchObject({ code: "USER_NOT_FOUND" });
   });
 });

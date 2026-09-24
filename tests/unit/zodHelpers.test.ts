@@ -14,11 +14,15 @@ describe("optionalUrl", () => {
     expect(schema.parse("https://example.com/logo.png")).toBe("https://example.com/logo.png");
   });
 
-  it("treats an empty string as not provided", () => {
-    expect(schema.parse("")).toBeUndefined();
+  it("treats an empty string as 'no value' (null, so a PATCH clears it)", () => {
+    expect(schema.parse("")).toBeNull();
   });
 
-  it("accepts the field being entirely absent", () => {
+  it("treats null (an unset column round-tripped from the API) the same way", () => {
+    expect(schema.parse(null)).toBeNull();
+  });
+
+  it("accepts the field being entirely absent (left untouched)", () => {
     expect(schema.parse(undefined)).toBeUndefined();
   });
 
@@ -34,8 +38,9 @@ describe("optionalEmail", () => {
     expect(schema.parse("editor@example.com")).toBe("editor@example.com");
   });
 
-  it("treats an empty string as not provided", () => {
-    expect(schema.parse("")).toBeUndefined();
+  it("treats an empty string or null as 'no value' (null)", () => {
+    expect(schema.parse("")).toBeNull();
+    expect(schema.parse(null)).toBeNull();
   });
 
   it("still rejects a genuinely invalid, non-empty email", () => {

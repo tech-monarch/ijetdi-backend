@@ -95,6 +95,7 @@ export async function createSubmission(params: {
     status: "submitted",
     supplementaryFiles: [],
     references: [],
+    keywords: [],
     authorIds,
     editorIds: [],
   });

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ok, okPaginated } from "../../lib/envelope.js";
 import { requirePermission } from "../../middleware/requireAuth.js";
+import { roleHasPermission } from "../../lib/permissions.js";
 import { validateBody } from "../../middleware/validate.js";
 import { camelQuery } from "../../middleware/caseConversion.js";
 import { badRequest } from "../../lib/envelope.js";
@@ -82,14 +83,22 @@ articlesAdminRouter.post(
   },
 );
 
-// PATCH /api/admin/articles/:id — Permission: articles.update.
+// PATCH /api/admin/articles/:id — Permission: articles.update. A `status` in
+// the body that differs from the stored one is treated as a status change:
+// it additionally requires articles.publish and must be a legal transition
+// (same rules as PATCH .../status below).
 articlesAdminRouter.patch(
   "/articles/:id",
   requirePermission("articles.update"),
   validateBody(articleUpdateSchema),
   async (req, res, next) => {
     try {
-      ok(res, await articlesService.updateArticle(req.params.id, req.body));
+      ok(
+        res,
+        await articlesService.updateArticle(req.params.id, req.body, {
+          canPublish: roleHasPermission(req.user!.role, "articles.publish"),
+        }),
+      );
     } catch (err) {
       next(err);
     }

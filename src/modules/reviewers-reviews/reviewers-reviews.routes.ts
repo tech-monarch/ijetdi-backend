@@ -63,8 +63,13 @@ reviewersAdminRouter.patch(
   },
 );
 
-// GET /api/admin/reviews — Permission: reviews.read.
-reviewersAdminRouter.get("/reviews", requirePermission("reviews.read"), async (req, res, next) => {
+// GET /api/admin/reviews — Permission: reviews.manage. (Was reviews.read, which
+// the `reviewer` role also holds — that let any reviewer list EVERY review,
+// including other reviewers' confidential comments, by calling this route
+// directly. reviews.read is deliberately only "my own reviews", served by
+// GET /api/reviewer/my-reviews below; reviews.manage is "any reviewer's data",
+// matching the frontend's src/auth/permissions.js.)
+reviewersAdminRouter.get("/reviews", requirePermission("reviews.manage"), async (req, res, next) => {
   try {
     const query = reviewListQuerySchema.parse(camelQuery(req));
     ok(res, await reviewersReviewsService.listReviews(query));
@@ -73,8 +78,8 @@ reviewersAdminRouter.get("/reviews", requirePermission("reviews.read"), async (r
   }
 });
 
-// GET /api/admin/reviews/:id — Permission: reviews.read.
-reviewersAdminRouter.get("/reviews/:id", requirePermission("reviews.read"), async (req, res, next) => {
+// GET /api/admin/reviews/:id — Permission: reviews.manage (see above).
+reviewersAdminRouter.get("/reviews/:id", requirePermission("reviews.manage"), async (req, res, next) => {
   try {
     ok(res, await reviewersReviewsService.getReviewById(req.params.id));
   } catch (err) {

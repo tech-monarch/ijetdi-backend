@@ -2,7 +2,11 @@ import { Resend } from "resend";
 import { env } from "../../config/env.js";
 import type { EmailProvider, EmailTemplate } from "./sendEmail.js";
 
-const resend = new Resend(env.RESEND_API_KEY);
+// `new Resend("")` throws at construction ("Missing API key"), which crashed the
+// whole process at import time whenever RESEND_API_KEY was unset — making the
+// dev-mode "log instead of sending" fallback in send() below unreachable. The
+// placeholder is never used to send: send() returns early when the real key is empty.
+const resend = new Resend(env.RESEND_API_KEY || "re_placeholder_unset");
 
 function renderTemplate(template: EmailTemplate, data: Record<string, unknown>): { subject: string; html: string } {
   switch (template) {
@@ -84,12 +88,34 @@ function renderTemplate(template: EmailTemplate, data: Record<string, unknown>):
     case "user-account-created": {
       const name = String(data.name ?? "");
       const setPasswordUrl = String(data.setPasswordUrl ?? "");
+      const hasTemporaryPassword = Boolean(data.hasTemporaryPassword);
       return {
         subject: "Your account has been created",
-        html: `
+        html: hasTemporaryPassword
+          ? `
+          <p>Hi ${name},</p>
+          <p>An account has been created for you. An administrator has your temporary
+          password — ask them for it, or <a href="${setPasswordUrl}">set your own
+          password</a> instead. That link expires in 1 hour.</p>
+        `
+          : `
           <p>Hi ${name},</p>
           <p>An account has been created for you. <a href="${setPasswordUrl}">Set your
           password</a> to log in. This link expires in 1 hour.</p>
+        `,
+      };
+    }
+    case "admin-password-changed": {
+      const name = String(data.name ?? "");
+      const setPasswordUrl = String(data.setPasswordUrl ?? "");
+      return {
+        subject: "Your account password was changed",
+        html: `
+          <p>Hi ${name},</p>
+          <p>An administrator changed the password on your account. If you expected
+          this, you're all set. If you didn't, or you'd rather choose your own
+          password, <a href="${setPasswordUrl}">set a new one here</a> — this link
+          expires in 1 hour.</p>
         `,
       };
     }
