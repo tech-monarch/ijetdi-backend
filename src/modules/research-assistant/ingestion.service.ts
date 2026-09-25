@@ -97,3 +97,47 @@ export async function backfillAllPublished(
 
   return { articlesProcessed: articles.length, chunksWritten };
 }
+
+/**
+ * Same idea as backfillAllPublished, but scoped to published articles that
+ * currently have ZERO chunks, and resilient to a single article's failure
+ * rather than stopping the whole run on it.
+ *
+ * Built for this specific gap: an article can end up published with no
+ * chunks either because it was inserted directly (a seed script, a manual
+ * DB fix — anything that skips the updateStatus() hook in
+ * articles.service.ts) or because ingestion was attempted at publish time
+ * but failed (e.g. GEMINI_API_KEY was invalid that day) — that failure is
+ * caught and only logged server-side there, so nothing about the article
+ * itself looks wrong afterwards. Both cases look identical from here:
+ * "published, but article_chunks has no rows for it."
+ *
+ * Unlike backfillAllPublished (deliberate, one-time, fail-fast — see
+ * src/db/ingest.ts), this is meant to run unattended and often — e.g. as a
+ * Render pre-deploy command on every deploy — so a single bad article must
+ * not block the rest or fail the whole command. On a normal run where
+ * nothing is missing, this does one cheap query and exits.
+ */
+export async function backfillMissingPublished(
+  onProgress?: (done: number, total: number, articleTitle: string) => void,
+): Promise<{ articlesProcessed: number; chunksWritten: number; failures: { id: string; title: string; error: string }[] }> {
+  const articles = await prisma.article.findMany({
+    where: { status: "published", chunks: { none: {} } },
+    select: { id: true, title: true },
+    orderBy: { publishedDate: "asc" },
+  });
+
+  let chunksWritten = 0;
+  const failures: { id: string; title: string; error: string }[] = [];
+  for (let i = 0; i < articles.length; i++) {
+    try {
+      const { chunksWritten: n } = await ingestArticle(articles[i].id);
+      chunksWritten += n;
+    } catch (err) {
+      failures.push({ id: articles[i].id, title: articles[i].title, error: err instanceof Error ? err.message : String(err) });
+    }
+    onProgress?.(i + 1, articles.length, articles[i].title);
+  }
+
+  return { articlesProcessed: articles.length, chunksWritten, failures };
+}

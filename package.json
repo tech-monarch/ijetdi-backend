@@ -18,6 +18,7 @@
     "seed": "tsx src/db/seed.ts",
     "seed:article": "tsx src/db/seed-article.ts",
     "ingest": "tsx src/db/ingest.ts",
+    "ingest:missing": "tsx src/db/ingest-missing.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts"
